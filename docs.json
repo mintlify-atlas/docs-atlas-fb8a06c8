@@ -75,7 +75,8 @@
             "pages": [
               "api/auth/login",
               "api/auth/logout",
-              "api/auth/session"
+              "api/auth/session",
+              "api/auth/renew"
             ]
           },
           {

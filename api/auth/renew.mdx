@@ -1,0 +1,179 @@
+---
+title: "Session Renewal"
+description: "Refresh your session to extend the expiry time"
+---
+
+## POST /api/auth/renew
+
+Renew an active session by refreshing the session cookie with a new `issuedAt` timestamp. This endpoint resets the 5-minute expiry window, allowing users to stay signed in without re-authenticating.
+
+<Note>
+This endpoint must be called with credentials (the existing session cookie) and will only succeed if the session is still valid.
+</Note>
+
+## Request
+
+### Headers
+
+<ParamField path="Cookie" type="string" required>
+  Must include the `crocante_session` cookie from an active session
+</ParamField>
+
+### Body
+
+No request body required. The session token is read from the cookie.
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  `true` if the session was successfully renewed
+</ResponseField>
+
+### Success Response
+
+```json
+{
+  "success": true
+}
+```
+
+The response will include a `Set-Cookie` header with the renewed session cookie containing the same token but a fresh `issuedAt` timestamp.
+
+### Error Responses
+
+**401 Unauthorized** - Session is invalid or expired
+
+```json
+{
+  "error": "Unauthorized",
+  "code": "SESSION_INVALID"
+}
+```
+
+## Usage
+
+This endpoint is typically called automatically by the client before the session expires to maintain an active session.
+
+<CodeGroup>
+
+```typescript React Hook
+import { useSessionExpiry } from '@/hooks/use-session-expiry';
+
+function MyComponent() {
+  // Automatically renews session 30 seconds before expiry
+  useSessionExpiry({
+    onWarning: () => console.log('Session expiring soon'),
+    onExpired: () => console.log('Session expired'),
+  });
+  
+  return <div>Protected content</div>;
+}
+```
+
+```typescript Fetch API
+async function renewSession() {
+  const response = await fetch('/api/auth/renew', {
+    method: 'POST',
+    credentials: 'include', // Required to send cookies
+  });
+  
+  if (!response.ok) {
+    throw new Error('Session renewal failed');
+  }
+  
+  const data = await response.json();
+  return data; // { success: true }
+}
+```
+
+```bash cURL
+curl -X POST https://your-domain.com/api/auth/renew \
+  -H "Cookie: crocante_session=..." \
+  -c cookies.txt
+```
+
+</CodeGroup>
+
+## Behavior
+
+1. **Token Preservation**: The same authentication token is kept; only the `issuedAt` timestamp is updated
+2. **Expiry Reset**: The 5-minute countdown starts fresh from the renewal time
+3. **Cookie Update**: A new `Set-Cookie` header is returned with the updated session
+4. **Idempotent**: Can be called multiple times while the session is valid
+
+## Security
+
+- HTTP-only cookie prevents JavaScript access
+- Secure flag enforced in production (HTTPS only)
+- SameSite=Strict prevents CSRF attacks
+- Session payload encrypted with AES-256-GCM
+
+## Common Use Cases
+
+### Automatic Renewal
+
+Keep users logged in by automatically renewing before expiry:
+
+```typescript
+// services/session-manager.ts
+export class SessionManager {
+  private renewalTimer: NodeJS.Timeout | null = null;
+  
+  scheduleRenewal(expiresAt: number) {
+    const msUntilExpiry = expiresAt - Date.now();
+    const renewAt = msUntilExpiry - 30_000; // Renew 30s before expiry
+    
+    if (renewAt > 0) {
+      this.renewalTimer = setTimeout(async () => {
+        await fetch('/api/auth/renew', {
+          method: 'POST',
+          credentials: 'include',
+        });
+      }, renewAt);
+    }
+  }
+  
+  cleanup() {
+    if (this.renewalTimer) {
+      clearTimeout(this.renewalTimer);
+    }
+  }
+}
+```
+
+### Manual Renewal
+
+Allow users to manually extend their session:
+
+```typescript
+function SessionExtender() {
+  const [renewing, setRenewing] = useState(false);
+  
+  const handleRenew = async () => {
+    setRenewing(true);
+    try {
+      await fetch('/api/auth/renew', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      toast.success('Session extended');
+    } catch (error) {
+      toast.error('Failed to renew session');
+    } finally {
+      setRenewing(false);
+    }
+  };
+  
+  return (
+    <button onClick={handleRenew} disabled={renewing}>
+      Extend Session
+    </button>
+  );
+}
+```
+
+## Related Endpoints
+
+- [Login](/api/auth/login) - Authenticate and create a new session
+- [Logout](/api/auth/logout) - End the current session
+- [Session Status](/api/auth/session) - Check session validity and expiry time

@@ -510,6 +510,135 @@ Manage session operation modes.
 
 Handles different session states and modes for user authentication flows.
 
+---
+
+## useTableFilters
+
+Manages table filtering state, including filter modal, active filters display, and pagination reset.
+
+### Signature
+
+```typescript
+function useTableFilters(props: UseTableFiltersProps): UseTableFiltersReturn
+
+interface UseTableFiltersProps {
+  page: number;
+  selectors: SelectorProps[];
+  resetSelectors: () => void;
+  setFilters: (filters: string[][]) => void;
+  handleChangeFilters: { op: SelectOption; index: number } | undefined;
+}
+
+interface UseTableFiltersReturn {
+  page: number;
+  filtersClassName: string;
+  activeFilters: string;
+  openFiltersModal: () => void;
+  filtersModalOpen: boolean;
+  closeFiltersModal: () => void;
+}
+```
+
+### Parameters
+
+- **page**: Current page number
+- **selectors**: Array of selector configurations for filter dropdowns
+- **resetSelectors**: Function to reset all selectors to default state
+- **setFilters**: Callback to update the applied filters
+- **handleChangeFilters**: Trigger object for filter changes
+
+### Return Value
+
+- **page**: Synchronized page number (resets to 1 when filters change)
+- **filtersClassName**: CSS class for filter button styling (`"secondary"` or `"outline"`)
+- **activeFilters**: Formatted string of active filter labels
+- **openFiltersModal**: Function to open the filters modal
+- **filtersModalOpen**: Boolean indicating if filters modal is open
+- **closeFiltersModal**: Function to close the filters modal
+
+### Example
+
+```typescript
+import { useTableFilters } from '@/hooks/use-table-filters';
+import { useSelector } from '@/hooks/use-selector';
+
+function ActivityTable() {
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<string[][]>([]);
+  
+  // Status filter selector
+  const statusSelector = useSelector([
+    { label: 'All Statuses', value: '' },
+    { label: 'Active', value: 'ACTIVE' },
+    { label: 'Completed', value: 'COMPLETED' },
+  ]);
+  
+  // Type filter selector
+  const typeSelector = useSelector([
+    { label: 'All Types', value: '' },
+    { label: 'Deposit', value: 'DEPOSIT' },
+    { label: 'Withdrawal', value: 'WITHDRAWAL' },
+  ]);
+  
+  const resetSelectors = () => {
+    statusSelector.reset();
+    typeSelector.reset();
+  };
+  
+  const {
+    page: currentPage,
+    filtersClassName,
+    activeFilters,
+    openFiltersModal,
+    filtersModalOpen,
+    closeFiltersModal,
+  } = useTableFilters({
+    page,
+    selectors: [statusSelector, typeSelector],
+    resetSelectors,
+    setFilters,
+    handleChangeFilters: undefined,
+  });
+  
+  return (
+    <div>
+      <Button
+        variant={filtersClassName}
+        onClick={openFiltersModal}
+      >
+        Filters {activeFilters && `(${activeFilters})`}
+      </Button>
+      
+      <Modal isOpen={filtersModalOpen} onClose={closeFiltersModal}>
+        <Select {...statusSelector} label="Status" />
+        <Select {...typeSelector} label="Type" />
+      </Modal>
+      
+      <Table
+        data={filteredData}
+        page={currentPage}
+        onPageChange={setPage}
+      />
+    </div>
+  );
+}
+```
+
+### Behavior
+
+1. **Filter Application**: When selectors change, filters are automatically applied
+2. **Page Reset**: Page resets to 1 whenever filters change
+3. **Visual Feedback**: Filter button changes from `"secondary"` to `"outline"` when filters are active
+4. **Active Filter Display**: Shows comma-separated list of active filter labels
+5. **Modal Management**: Opens/closes filter modal with automatic reset on open
+
+### Use Cases
+
+- Activity transaction filtering by status and type
+- Loan history filtering by loan type and date range
+- Staking position filtering by currency and status
+- Any table that needs multiple filter criteria
+
 ## Next Steps
 
 <CardGroup cols={2}>

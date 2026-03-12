@@ -1,0 +1,284 @@
+---
+title: "Collateral Management"
+description: "Add and remove collateral from active loans to manage risk"
+---
+
+## Add Collateral
+
+<CodeGroup>
+```typescript POST /loan/{opId}/collateral/add
+import { usePostLoanManager } from '@/services/hooks/mutations/use-post-loan-manager';
+
+const { mutate: addCollateral } = usePostLoanManager('add');
+
+addCollateral({
+  userId: 'cf3db3f5-63ef-4e5d-a6a4-bdef0160191e',
+  opId: 'edaa7bd5-00d6-40b6-8b27-f21e3b06c561',
+  amount: '0.0001'
+});
+```
+</CodeGroup>
+
+Add collateral to an active loan to improve the collateral ratio, reduce liquidation risk, and potentially move to a lower APR tier.
+
+### Path Parameters
+
+<ParamField path="opId" type="string" required>
+  The loan operation ID to add collateral to
+</ParamField>
+
+### Request Body
+
+<ParamField body="amount" type="string" required>
+  The amount of collateral to add, denominated in the loan's collateral currency (e.g., ETH for ETH_USDT loans).
+  
+  Example: `"0.0001"` to add 0.0001 ETH
+</ParamField>
+
+### Response
+
+Returns the updated loan object with modified collateral values:
+- `collat`: Increased by the added amount
+- `ratio`: Improved collateral ratio
+- `apr`: Potentially lower if moved to a better tier
+- `tierNum`: May change to a lower-rate tier
+- `liqPrice`: Lower liquidation price (safer)
+- `lastUpdate.type`: Set to `ADD_COLLAT`
+- `lastUpdate.dCollat`: Amount of collateral added
+
+### Response Example
+
+```json
+{
+  "typeId": "ETH_USDT",
+  "operation": {
+    "id": "edaa7bd5-00d6-40b6-8b27-f21e3b06c561",
+    "status": "ACTIVE"
+  },
+  "status": "ACTIVE",
+  "size": "1",
+  "collat": "0.00102649",
+  "debt": "1.01",
+  "interest": "0.01",
+  "ratio": "2.0085071672759779",
+  "liqPrice": "1173.4416677220430788",
+  "apr": "0.0975",
+  "tierNum": 1,
+  "tiers": [
+    {
+      "minRatio": "1.2",
+      "minPrice": "1173.4416677220430788",
+      "apr": "0.135"
+    },
+    {
+      "minRatio": "1.5",
+      "minPrice": "1466.8020846525538486",
+      "apr": "0.0975"
+    },
+    {
+      "minRatio": "2",
+      "minPrice": "1955.7361128700717981",
+      "apr": "0.05"
+    }
+  ],
+  "lastUpdate": {
+    "createdAt": "2026-02-05T17:49:33.699620511Z",
+    "type": "ADD_COLLAT",
+    "status": "ACTIVE",
+    "apr": "0.0975",
+    "dCollat": "0.0001",
+    "dRepayed": "0",
+    "price": "1964.055",
+    "dFees": "0",
+    "forcedLiq": false
+  }
+}
+```
+
+---
+
+## Remove Collateral
+
+<CodeGroup>
+```typescript POST /loan/{opId}/collateral/remove
+import { usePostLoanManager } from '@/services/hooks/mutations/use-post-loan-manager';
+
+const { mutate: removeCollateral } = usePostLoanManager('remove');
+
+removeCollateral({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  opId: '389ae85b-7968-4086-b7e3-2b53dc4fe6ed',
+  amount: '0.04018674'
+});
+```
+</CodeGroup>
+
+Remove excess collateral from an active loan. You can only remove collateral if the remaining amount maintains the required minimum collateral ratio for the loan type.
+
+### Path Parameters
+
+<ParamField path="opId" type="string" required>
+  The loan operation ID to remove collateral from
+</ParamField>
+
+### Request Body
+
+<ParamField body="amount" type="string" required>
+  The amount of collateral to remove, denominated in the loan's collateral currency.
+  
+  The amount must be small enough to maintain the loan's minimum collateral ratio. If the removal would drop below the minimum ratio, the request will fail.
+  
+  Example: `"0.04018674"` to remove 0.04 ETH
+</ParamField>
+
+### Response
+
+Returns the updated loan object with modified collateral values:
+- `collat`: Decreased by the removed amount
+- `ratio`: Reduced collateral ratio
+- `apr`: Potentially higher if moved to a higher-risk tier
+- `tierNum`: May change to a higher-rate tier
+- `liqPrice`: Higher liquidation price (more risk)
+- `lastUpdate.type`: Set to `REM_COLLAT`
+- `lastUpdate.dCollat`: Negative value representing removal
+
+### Important Notes
+
+<Warning>
+  Removing collateral increases your liquidation risk. Always ensure you maintain an adequate safety margin above the minimum required ratio.
+</Warning>
+
+- Cannot remove collateral that would bring the ratio below `minCollatRatio`
+- Removing collateral may trigger an APR tier change
+- Monitor the `liqPrice` field to understand your liquidation risk
+- Consider market volatility when removing collateral
+
+---
+
+## Collateral Ratio Tiers
+
+Loan APR is determined by your collateral ratio tier. Higher collateral ratios result in lower interest rates.
+
+### Example Tier Structure (ETH_USDT)
+
+| Minimum Ratio | APR | Risk Level |
+|--------------|-----|------------|
+| 1.2 (120%) | 13.5% | High Risk - Near liquidation |
+| 1.5 (150%) | 9.75% | Medium Risk |
+| 2.0 (200%) | 5.0% | Low Risk - Safest tier |
+
+### Collateral Ratio Calculation
+
+```
+Collateral Ratio = (Collateral Amount × Collateral Price) / Total Debt
+```
+
+**Example:**
+- Collateral: 0.00102649 ETH
+- ETH Price: $1,964.055
+- Debt: 1.01 USDT
+
+```
+Ratio = (0.00102649 × 1964.055) / 1.01
+      = 2.0085071672759779
+      = ~200% collateralization
+```
+
+This ratio falls in the 2.0 tier, qualifying for the lowest 5.0% APR.
+
+---
+
+## Managing Collateral Strategically
+
+### Adding Collateral
+
+**When to add collateral:**
+- Market is volatile and you want to reduce liquidation risk
+- You're close to dropping to a higher APR tier
+- You want to qualify for a lower interest rate tier
+- Your current ratio is approaching the margin call level
+
+**Benefits:**
+- Lower liquidation risk
+- Potentially lower APR
+- More buffer against price fluctuations
+- Peace of mind during market downturns
+
+### Removing Collateral
+
+**When to remove collateral:**
+- You have excess collateral well above required ratios
+- You want to deploy collateral elsewhere
+- Market conditions are stable
+- You need liquidity for other opportunities
+
+**Risks:**
+- Increased liquidation risk
+- May trigger higher APR tier
+- Less protection against sudden market moves
+- Margin call risk if market drops
+
+---
+
+## Liquidation Protection
+
+### Understanding Liquidation Price
+
+The `liqPrice` field shows the collateral price at which your loan will be subject to liquidation:
+
+```typescript
+// Example from active loan
+{
+  "liqPrice": "1173.4416677220430788",
+  "collat": "0.00102649",
+  "debt": "1.01"
+}
+```
+
+If ETH price drops to $1,173.44, this loan enters liquidation territory.
+
+### Margin Call vs Forced Liquidation
+
+- **Margin Call Ratio** (e.g., 1.3): Warning zone - add collateral recommended
+- **Liquidation Ratio** (e.g., 1.2): Automatic liquidation can occur
+- **Forced Liquidation**: When `forcedLiq: true`, liquidation is in process
+
+### Avoiding Liquidation
+
+1. Maintain healthy collateral ratios (aim for 2.0 or higher)
+2. Monitor market conditions and price movements
+3. Add collateral proactively during market downturns
+4. Set up alerts for margin call notifications
+5. Keep reserve collateral available for emergencies
+
+---
+
+## TypeScript Types
+
+```typescript
+// Add/Remove collateral request
+interface CollateralManagementRequest {
+  userId: string;
+  opId: string;      // Loan operation ID
+  amount: string;    // Amount to add or remove
+}
+
+// Collateral tier structure
+interface CollateralTier {
+  minRatio: string;  // Minimum ratio for this tier (e.g., "1.5")
+  minPrice: string;  // Corresponding collateral price
+  apr: string;       // Annual percentage rate (e.g., "0.0975" = 9.75%)
+}
+
+// Loan with collateral details
+interface LoanWithCollateral {
+  collat: string;              // Current collateral amount
+  ratio: string;               // Current collateral ratio
+  liqPrice: string;            // Liquidation price
+  apr: string;                 // Current APR based on tier
+  tierNum: number;             // Active tier (0-based index)
+  minCollat: string;           // Minimum required collateral
+  tiers: CollateralTier[];     // Available tiers
+  forcedLiq: boolean;          // Forced liquidation status
+}
+```

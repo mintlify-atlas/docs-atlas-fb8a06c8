@@ -1,0 +1,294 @@
+---
+title: 'Staking Types'
+description: 'TypeScript interfaces and data structures for staking products and positions'
+---
+
+## Overview
+
+This page documents the TypeScript types and data structures used in the Staking API, as defined in the Crocante platform source code.
+
+## Staking Type
+
+Represents an available staking product configuration.
+
+### StakingTypeItem Interface
+
+```typescript
+interface StakingTypeItem {
+  id: string;                          // Unique identifier for this staking product
+  currencyId: string;                  // Cryptocurrency that can be staked (e.g., "BTC", "ETH")
+  mode: "VARIABLE" | "FIXED";          // Staking mode
+  apy: string;                         // Annual Percentage Yield (decimal string, e.g., "0.05" = 5%)
+  minAmount: string;                   // Minimum amount required to stake
+  durationDays?: number;               // Lock-up period in days (only present for FIXED mode)
+}
+```
+
+### Field Descriptions
+
+<ParamField path="id" type="string" required>
+  Unique identifier for the staking product. Use this as `typeId` when creating a stake.
+</ParamField>
+
+<ParamField path="currencyId" type="string" required>
+  The cryptocurrency identifier that can be staked. Examples: `"BTC"`, `"ETH"`, `"USDT"`, `"SOL"`.
+</ParamField>
+
+<ParamField path="mode" type="enum" required>
+  Staking mode:
+  - `VARIABLE` - Flexible staking with variable APY, no fixed lock-up
+  - `FIXED` - Fixed-term staking with guaranteed APY and defined duration
+</ParamField>
+
+<ParamField path="apy" type="string" required>
+  Annual Percentage Yield as a decimal string. For example:
+  - `"0.05"` represents 5% APY
+  - `"0.12"` represents 12% APY
+</ParamField>
+
+<ParamField path="minAmount" type="string" required>
+  Minimum amount required to create a stake for this product. Specified in the base unit of the currency.
+</ParamField>
+
+<ParamField path="durationDays" type="number">
+  Duration of the lock-up period in days. Only present for `FIXED` mode products. After this period, the stake becomes redeemable.
+</ParamField>
+
+### Example
+
+```json
+{
+  "id": "stake_btc_fixed_90",
+  "currencyId": "BTC",
+  "mode": "FIXED",
+  "apy": "0.08",
+  "minAmount": "0.001",
+  "durationDays": 90
+}
+```
+
+## Staking Position
+
+Represents an active or redeemed staking position.
+
+### StakingData Interface
+
+```typescript
+interface StakingData {
+  typeId: string;                      // ID of the staking product
+  startsAt: string;                    // ISO timestamp when stake started
+  redeemableAt: string | null;         // ISO timestamp when stake can be redeemed (null if already redeemed)
+  initialAmount: string;               // Original staked amount
+  initialAPY: string;                  // APY at time of creation
+  operation: Operation;                // Operation metadata
+  type: StakingTypeItem;               // Full staking type details
+  amount: string;                      // Current staked amount
+  yield: string;                       // Current accumulated yield
+  estRedeemYield: string;              // Estimated yield at redemption
+  apy: string;                         // Current APY (may differ from initial for VARIABLE)
+}
+```
+
+### Field Descriptions
+
+<ResponseField name="typeId" type="string" required>
+  References the staking product ID that this position is based on.
+</ResponseField>
+
+<ResponseField name="startsAt" type="string" required>
+  ISO 8601 timestamp indicating when the staking position was created.
+</ResponseField>
+
+<ResponseField name="redeemableAt" type="string | null" required>
+  ISO 8601 timestamp indicating when the stake can be redeemed. For FIXED staking, this is `startsAt + durationDays`. For redeemed stakes, this is `null`.
+</ResponseField>
+
+<ResponseField name="initialAmount" type="string" required>
+  The original amount staked at position creation.
+</ResponseField>
+
+<ResponseField name="initialAPY" type="string" required>
+  The APY at the time the stake was created. Preserved for historical tracking.
+</ResponseField>
+
+<ResponseField name="operation" type="Operation" required>
+  Metadata about the staking operation. See [Operation Type](#operation-type) below.
+</ResponseField>
+
+<ResponseField name="type" type="StakingTypeItem" required>
+  Complete details of the staking product this position is based on.
+</ResponseField>
+
+<ResponseField name="amount" type="string" required>
+  Current staked amount (typically same as `initialAmount`).
+</ResponseField>
+
+<ResponseField name="yield" type="string" required>
+  The yield accumulated so far on this staking position.
+</ResponseField>
+
+<ResponseField name="estRedeemYield" type="string" required>
+  Estimated total yield at redemption time. For FIXED stakes, this is the guaranteed yield. For VARIABLE stakes, this is an estimate based on current APY.
+</ResponseField>
+
+<ResponseField name="apy" type="string" required>
+  Current APY. For FIXED mode, this matches `initialAPY`. For VARIABLE mode, this may differ as rates change.
+</ResponseField>
+
+### Example
+
+```json
+{
+  "typeId": "stake_eth_variable",
+  "startsAt": "2026-01-15T10:30:00Z",
+  "redeemableAt": "2026-01-15T10:30:00Z",
+  "initialAmount": "5.0",
+  "initialAPY": "0.045",
+  "operation": {
+    "id": "op_stake_abc123",
+    "status": "Active",
+    "type": "STAKE",
+    "openedAt": "2026-01-15T10:30:00Z",
+    "updatedAt": "2026-03-12T14:20:00Z",
+    "closedAt": null
+  },
+  "type": {
+    "id": "stake_eth_variable",
+    "currencyId": "ETH",
+    "mode": "VARIABLE",
+    "apy": "0.05",
+    "minAmount": "0.1"
+  },
+  "amount": "5.0",
+  "yield": "0.0342",
+  "estRedeemYield": "0.0342",
+  "apy": "0.05"
+}
+```
+
+## Operation Type
+
+Metadata associated with every staking operation.
+
+### Operation Interface
+
+```typescript
+interface Operation {
+  id: string;                          // Unique operation identifier
+  creatorId: string;                   // User who created the operation
+  ownerId: string;                     // Current owner of the operation
+  openedAt: string;                    // ISO timestamp when operation opened
+  updatedAt: string;                   // ISO timestamp of last update
+  closedAt: string | null;             // ISO timestamp when closed (null if active)
+  status: string;                      // Operation status ("Active", "Redeemed", etc.)
+  type: string;                        // Operation type ("STAKE")
+  fullType: string;                    // Full type descriptor
+}
+```
+
+### Field Descriptions
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the operation. Use this ID when redeeming the stake via `EP_STAKING_REDEEM`.
+</ResponseField>
+
+<ResponseField name="creatorId" type="string" required>
+  User ID of the account that created this staking operation.
+</ResponseField>
+
+<ResponseField name="ownerId" type="string" required>
+  User ID of the current owner of this staking position.
+</ResponseField>
+
+<ResponseField name="openedAt" type="string" required>
+  ISO 8601 timestamp when the staking operation was created.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string" required>
+  ISO 8601 timestamp of the most recent update to this operation.
+</ResponseField>
+
+<ResponseField name="closedAt" type="string | null" required>
+  ISO 8601 timestamp when the operation was closed/redeemed. `null` for active stakes.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current status of the operation. Common values:
+  - `"Active"` - Stake is currently active
+  - `"Redeemed"` - Stake has been redeemed
+</ResponseField>
+
+<ResponseField name="type" type="string" required>
+  Operation type identifier. For staking operations, this is typically `"STAKE"`.
+</ResponseField>
+
+<ResponseField name="fullType" type="string" required>
+  Extended type descriptor providing additional context about the operation.
+</ResponseField>
+
+## TypeScript Schemas
+
+The platform uses [Zod](https://zod.dev) for runtime validation. Here are the validation schemas:
+
+### StakingTypeItem Schema
+
+```typescript
+import { z } from "zod";
+
+export const StakingTypeItemSchema = z.object({
+  id: z.string(),
+  currencyId: z.string(),
+  mode: z.enum(["VARIABLE", "FIXED"]),
+  apy: z.string(),
+  minAmount: z.string(),
+  durationDays: z.number().optional(),
+});
+
+export type StakingTypeItem = z.infer<typeof StakingTypeItemSchema>;
+```
+
+### StakingData Schema
+
+```typescript
+import { z } from "zod";
+
+export const StakingDataSchema = z.array(z.object({
+  typeId: z.string(),
+  startsAt: z.string(),
+  redeemableAt: z.string().nullable(),
+  initialAmount: z.string(),
+  initialAPY: z.string(),
+  operation: OperationSchema,
+  type: TypeSchema,
+  amount: z.string(),
+  yield: z.string(),
+  estRedeemYield: z.string(),
+  apy: z.string(),
+}));
+
+export type StakingData = z.infer<typeof StakingDataSchema>;
+```
+
+## Usage in React
+
+The platform provides React hooks for type-safe staking operations:
+
+```typescript
+import { useStakingType } from '@/services/hooks/use-staking-type';
+import { useStaking } from '@/services/hooks/use-staking';
+import { usePostStaking } from '@/services/hooks/mutations/use-post-staking';
+
+// Fetch available staking types
+const { data: stakingTypes } = useStakingType(userId, 0);
+
+// Fetch active stakes
+const { data: activeStakes } = useStaking(userId, 0, "Active", 0);
+
+// Create a new stake
+const { mutate: createStake } = usePostStaking();
+createStake({
+  userId,
+  typeId: 'stake_btc_fixed_90',
+  amount: '0.5'
+});
+```

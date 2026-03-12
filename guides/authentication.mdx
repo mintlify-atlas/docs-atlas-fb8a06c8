@@ -1,0 +1,179 @@
+---
+title: 'Authentication'
+description: 'Learn how to log in, register, and manage your Crocante account sessions'
+icon: 'lock'
+---
+
+## Overview
+
+Crocante uses a secure session-based authentication system with HttpOnly cookies managed by the backend-for-frontend (BFF) architecture. This guide covers logging in, registering new accounts, and managing session expiry.
+
+## Logging In
+
+### Access the Login Modal
+
+When you first visit Crocante or when your session expires, you'll be prompted with the login modal.
+
+<Steps>
+  <Step title="Enter Your Credentials">
+    Provide your username and password in the login form. The platform uses the `useLogin` hook from `services/hooks/mutations/use-login` to authenticate your credentials.
+  </Step>
+  
+  <Step title="Submit Login">
+    Click the **Log in** button to authenticate. Your credentials are securely sent to the backend, and an HttpOnly session cookie is created upon successful authentication.
+  </Step>
+  
+  <Step title="Alternative: Mock Data">
+    For demo purposes, you can click **Continue w/mock data** to explore the platform with sample data using the `useMock` mutation.
+  </Step>
+</Steps>
+
+<Note>
+  The session is managed entirely through HttpOnly cookies, which cannot be accessed by JavaScript, providing enhanced security against XSS attacks.
+</Note>
+
+## Registering a New Account
+
+### Multi-Step Registration Process
+
+Crocante requires a comprehensive KYC (Know Your Customer) process for compliance. The registration involves 5 steps:
+
+<Steps>
+  <Step title="Create Account">
+    Click **Register new account** from the login modal. Enter your desired username, email, and password in the account creation form.
+  </Step>
+  
+  <Step title="Verify Email (OTP)">
+    After submitting your account details, you'll receive a one-time password (OTP) via email. Enter the OTP code to verify your email address.
+    
+    <Info>
+      If you don't receive the OTP, you can click **Resend** to request a new code.
+    </Info>
+  </Step>
+  
+  <Step title="Personal Information">
+    Provide your personal details including:
+    - Full legal name
+    - Date of birth
+    - Residential address
+    - Phone number
+    - Nationality
+  </Step>
+  
+  <Step title="Assets Origin">
+    Declare the origin of your assets and confirm whether you are a politically exposed person (PEP). This information is required for regulatory compliance.
+  </Step>
+  
+  <Step title="KYC Documents">
+    Upload the required KYC documents:
+    - Government-issued ID (passport, driver's license, or national ID)
+    - Proof of address (utility bill, bank statement, or lease agreement)
+    - Selfie with ID (for identity verification)
+    
+    Once all documents are uploaded, your account will be submitted for review.
+  </Step>
+</Steps>
+
+<Warning>
+  Account approval may take 1-3 business days depending on verification queue. You'll receive an email notification when your account is approved.
+</Warning>
+
+## Session Management
+
+### Session Expiry Warning
+
+Crocante automatically monitors your session using the `SessionExpiryManager` component and `useSessionExpiry` hook located in:
+- `context/session-expiry-manager.tsx`
+- `hooks/use-session-expiry.ts`
+
+<Steps>
+  <Step title="Automatic Monitoring">
+    When you're signed in, the platform continuously monitors your session expiration time by checking `/api/auth/session`.
+  </Step>
+  
+  <Step title="Expiry Warning">
+    **30 seconds** before your session expires, a modal appears showing a countdown timer and the remaining time.
+    
+    ```
+    Your session will expire in 25 seconds. Renew to stay signed in.
+    ```
+  </Step>
+  
+  <Step title="Renew Session">
+    Click **Renew session** to extend your session without losing your work. The platform sends a request to `/api/auth/renew` to refresh your session cookie.
+  </Step>
+  
+  <Step title="Session Expired">
+    If the countdown reaches zero without renewal, the session expiry modal closes and the login modal appears, requiring you to log in again.
+  </Step>
+</Steps>
+
+### Session Provider Context
+
+The `SessionProvider` component (`context/session-provider.tsx`) manages your authentication state throughout the application:
+
+- **User Data Polling**: Automatically polls `/api/user/me` at regular intervals to keep user data fresh
+- **Auth Expired Events**: Listens for `auth-expired` browser events to handle session termination
+- **Automatic Logout**: Clears local storage and query cache when sessions expire
+
+<Info>
+  The `useSession()` hook provides access to:
+  - `isSignedIn`: Boolean indicating authentication status
+  - `user`: Current user object with profile data
+  - `isLoading`: Loading state during authentication checks
+  - `logout()`: Function to manually log out
+</Info>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep Sessions Active" icon="clock">
+    If you're actively working, click **Renew session** when prompted to avoid losing unsaved work.
+  </Card>
+  
+  <Card title="Secure Logout" icon="right-from-bracket">
+    Always log out when using shared or public computers to protect your account.
+  </Card>
+  
+  <Card title="Strong Passwords" icon="shield">
+    Use unique, complex passwords with a combination of letters, numbers, and symbols.
+  </Card>
+  
+  <Card title="Verify Email" icon="envelope-circle-check">
+    Ensure your email address is up to date to receive OTP codes and important notifications.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Can't Log In
+
+- Verify your username and password are correct (passwords are case-sensitive)
+- Check if your account has been approved after registration
+- Try clearing your browser cache and cookies
+
+### Not Receiving OTP
+
+- Check your spam/junk folder
+- Verify the email address you provided during registration
+- Use the **Resend** button to request a new OTP code
+- Contact support if issues persist
+
+### Session Keeps Expiring
+
+- Check your internet connection stability
+- Ensure cookies are enabled in your browser
+- Disable browser extensions that might interfere with cookies
+- Try using a different browser
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Managing Assets" icon="wallet" href="/guides/managing-assets">
+    Learn how to view and manage your digital asset portfolio
+  </Card>
+  
+  <Card title="Deposit & Withdrawal" icon="money-bill-transfer" href="/guides/deposit-withdrawal">
+    Fund your account and withdraw assets
+  </Card>
+</CardGroup>

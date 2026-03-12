@@ -1,0 +1,416 @@
+---
+title: 'Trading Pairs'
+api: 'GET /api/conversion/pairs'
+description: 'Retrieve all supported token conversion pairs and their configurations'
+---
+
+## Overview
+
+The trading pairs endpoint returns a comprehensive list of all supported token-to-token conversion pairs on the Crocante platform. Each pair includes routing information, fee structures, and trading side details.
+
+## Endpoint
+
+```
+GET /api/conversion/pairs
+```
+
+## Query Parameters
+
+<ParamField query="pollIntervalMs" type="number" default="300000">
+  Polling interval in milliseconds for automatic data refresh. Default is 300,000ms (5 minutes).
+  
+  Set to `0` to disable automatic refresh.
+</ParamField>
+
+## Response
+
+The response is a dictionary mapping source token symbols to arrays of available destination pairs:
+
+<ResponseField name="[TOKEN_SYMBOL]" type="array">
+  Array of available conversion pairs for the source token
+  
+  <ResponseField name="sourceId" type="string">
+    Source token identifier (the token you're converting from)
+  </ResponseField>
+  
+  <ResponseField name="destId" type="string">
+    Destination token identifier (the token you're converting to)
+  </ResponseField>
+  
+  <ResponseField name="feePercent" type="string">
+    Fee percentage applied to this specific conversion pair
+  </ResponseField>
+  
+  <ResponseField name="pair" type="object">
+    Underlying trading pair configuration
+    
+    <ResponseField name="groupId" type="string">
+      Trading group identifier
+    </ResponseField>
+    
+    <ResponseField name="baseId" type="string">
+      Base currency in the trading pair
+    </ResponseField>
+    
+    <ResponseField name="quoteId" type="string">
+      Quote currency in the trading pair
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="pairSide" type="string">
+    Trading side for this conversion: "BUY" or "SELL"
+  </ResponseField>
+</ResponseField>
+
+## TypeScript Types
+
+```typescript
+interface ConversionPairsDataItem {
+  sourceId: string;
+  destId: string;
+  feePercent: string;
+  pair: {
+    groupId: string;
+    baseId: string;
+    quoteId: string;
+  };
+  pairSide: "SELL" | "BUY";
+}
+
+type SupportedToken = 
+  | "AAVE" | "ADA" | "AVAX" | "BTC" | "ETH" | "SOL" | "XRP"
+  | "DOGE" | "DOT" | "LINK" | "LTC" | "MANA" | "MATIC" | "SUI"
+  | "USDC" | "USDT" | "XLM" | "ZIL" | "CHZ" | "DAI" | "UNI"
+  | "SAND" | "POL" | "S" | "TRX";
+
+type ConversionPairsData = Record<SupportedToken, ConversionPairsDataItem[]>;
+```
+
+## Example Request
+
+```bash
+curl -X GET https://api.crocante.io/api/conversion/pairs \
+  -H "Authorization: Bearer YOUR_API_TOKEN"
+```
+
+## Example Response
+
+```json
+{
+  "data": {
+    "BTC": [
+      {
+        "sourceId": "BTC",
+        "destId": "ETH",
+        "feePercent": "0.2",
+        "pair": {
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "ETH"
+        },
+        "pairSide": "SELL"
+      },
+      {
+        "sourceId": "BTC",
+        "destId": "USDT",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "USDT"
+        },
+        "pairSide": "SELL"
+      },
+      {
+        "sourceId": "BTC",
+        "destId": "USDC",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "USDC"
+        },
+        "pairSide": "SELL"
+      }
+    ],
+    "ETH": [
+      {
+        "sourceId": "ETH",
+        "destId": "BTC",
+        "feePercent": "0.2",
+        "pair": {
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "ETH"
+        },
+        "pairSide": "BUY"
+      },
+      {
+        "sourceId": "ETH",
+        "destId": "USDT",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "ETH",
+          "quoteId": "USDT"
+        },
+        "pairSide": "SELL"
+      },
+      {
+        "sourceId": "ETH",
+        "destId": "USDC",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "ETH",
+          "quoteId": "USDC"
+        },
+        "pairSide": "SELL"
+      }
+    ],
+    "USDT": [
+      {
+        "sourceId": "USDT",
+        "destId": "BTC",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "USDT"
+        },
+        "pairSide": "BUY"
+      },
+      {
+        "sourceId": "USDT",
+        "destId": "ETH",
+        "feePercent": "0.15",
+        "pair": {
+          "groupId": "main",
+          "baseId": "ETH",
+          "quoteId": "USDT"
+        },
+        "pairSide": "BUY"
+      },
+      {
+        "sourceId": "USDT",
+        "destId": "SOL",
+        "feePercent": "0.2",
+        "pair": {
+          "groupId": "main",
+          "baseId": "SOL",
+          "quoteId": "USDT"
+        },
+        "pairSide": "BUY"
+      }
+    ],
+    "SOL": [
+      {
+        "sourceId": "SOL",
+        "destId": "USDT",
+        "feePercent": "0.2",
+        "pair": {
+          "groupId": "main",
+          "baseId": "SOL",
+          "quoteId": "USDT"
+        },
+        "pairSide": "SELL"
+      },
+      {
+        "sourceId": "SOL",
+        "destId": "USDC",
+        "feePercent": "0.2",
+        "pair": {
+          "groupId": "main",
+          "baseId": "SOL",
+          "quoteId": "USDC"
+        },
+        "pairSide": "SELL"
+      }
+    ]
+  },
+  "status": 200
+}
+```
+
+## Supported Tokens
+
+The Crocante platform currently supports the following tokens for conversions:
+
+### Major Cryptocurrencies
+- **BTC** - Bitcoin
+- **ETH** - Ethereum
+- **SOL** - Solana
+- **ADA** - Cardano
+- **AVAX** - Avalanche
+- **DOT** - Polkadot
+- **MATIC** - Polygon (also **POL**)
+- **LINK** - Chainlink
+
+### Stablecoins
+- **USDT** - Tether USD
+- **USDC** - USD Coin
+- **DAI** - Dai Stablecoin
+
+### DeFi & Gaming Tokens
+- **AAVE** - Aave
+- **UNI** - Uniswap
+- **MANA** - Decentraland
+- **SAND** - The Sandbox
+- **SUI** - Sui
+- **CHZ** - Chiliz
+
+### Other Tokens
+- **XRP** - Ripple
+- **DOGE** - Dogecoin
+- **LTC** - Litecoin
+- **XLM** - Stellar
+- **ZIL** - Zilliqa
+- **TRX** - Tron
+- **S** - (Platform-specific token)
+
+## Understanding Pair Sides
+
+The `pairSide` field indicates how the conversion is executed:
+
+- **SELL**: You're selling the base currency for the quote currency
+- **BUY**: You're buying the base currency with the quote currency
+
+### Example
+
+For BTC → ETH conversion:
+```json
+{
+  "sourceId": "BTC",
+  "destId": "ETH",
+  "pair": {
+    "baseId": "BTC",
+    "quoteId": "ETH"
+  },
+  "pairSide": "SELL"
+}
+```
+
+This means you're **selling** BTC (base) to receive ETH (quote).
+
+For ETH → BTC conversion:
+```json
+{
+  "sourceId": "ETH",
+  "destId": "BTC",
+  "pair": {
+    "baseId": "BTC",
+    "quoteId": "ETH"
+  },
+  "pairSide": "BUY"
+}
+```
+
+This means you're **buying** BTC (base) by spending ETH (quote).
+
+## Fee Structure
+
+Different pairs have different fee percentages based on:
+
+- Liquidity depth
+- Market volatility
+- Token popularity
+- Stablecoin vs. volatile asset conversions
+
+Typical fee ranges:
+- **Stablecoin pairs** (USDT/USDC): 0.05% - 0.1%
+- **Major crypto pairs** (BTC/ETH): 0.15% - 0.2%
+- **Altcoin pairs**: 0.2% - 0.5%
+
+## Refresh Behavior
+
+The trading pairs endpoint includes automatic refresh:
+
+- **Stale Time**: 5 minutes (300,000ms)
+- **Default Refresh Interval**: 5 minutes (300,000ms)
+- **Background Refresh**: Enabled when `pollIntervalMs > 0`
+- **Refetch on Mount**: Only if data is stale
+
+```typescript
+// Refresh pairs every minute
+const pairs = useConversionPairs(userId, 60000);
+
+// Disable automatic refresh
+const pairs = useConversionPairs(userId, 0);
+```
+
+## Common Use Cases
+
+### Check if Pair is Supported
+
+```typescript
+const pairs = await fetchConversionPairs();
+const btcPairs = pairs.data.BTC;
+
+const canConvertToETH = btcPairs.some(pair => pair.destId === "ETH");
+
+if (canConvertToETH) {
+  console.log("BTC to ETH conversion is supported");
+}
+```
+
+### Find Lowest Fee Path
+
+```typescript
+const pairs = await fetchConversionPairs();
+const ethPairs = pairs.data.ETH;
+
+// Find cheapest way to convert ETH to stablecoins
+const stablecoinPairs = ethPairs.filter(pair => 
+  ["USDT", "USDC", "DAI"].includes(pair.destId)
+);
+
+const cheapest = stablecoinPairs.reduce((min, pair) => 
+  parseFloat(pair.feePercent) < parseFloat(min.feePercent) ? pair : min
+);
+
+console.log(`Cheapest path: ETH → ${cheapest.destId} (${cheapest.feePercent}% fee)`);
+```
+
+### Build Conversion UI
+
+```typescript
+const pairs = await fetchConversionPairs();
+
+// Get all tokens user can convert TO from BTC
+const fromBTC = pairs.data.BTC.map(pair => ({
+  symbol: pair.destId,
+  fee: pair.feePercent
+}));
+
+// Render dropdown of available destination tokens
+renderTokenDropdown(fromBTC);
+```
+
+### Validate Conversion Request
+
+```typescript
+function canConvert(from: string, to: string, pairsData: ConversionPairsData): boolean {
+  if (!pairsData[from]) {
+    return false; // Source token not supported
+  }
+  
+  return pairsData[from].some(pair => pair.destId === to);
+}
+
+if (!canConvert("DOGE", "BTC", pairs.data)) {
+  throw new Error("Conversion pair not supported");
+}
+```
+
+## Error Handling
+
+The pairs endpoint includes fallback behavior:
+
+- If the API request fails, returns mock/cached data
+- Logs warnings to console on errors
+- Query is disabled if `userId` is missing
+
+## Related Endpoints
+
+- [Token Conversion](/api/trading/conversion) - Execute conversions
+- [Price Quotes](/api/trading/quotes) - Get real-time pricing for specific pairs

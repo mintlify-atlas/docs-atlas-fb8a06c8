@@ -1,0 +1,352 @@
+---
+title: 'Token Conversion'
+description: 'Swap between cryptocurrencies with instant conversion and competitive rates'
+icon: 'arrow-right-arrow-left'
+---
+
+## Overview
+
+The Crocante Swap feature allows you to instantly convert one cryptocurrency to another without leaving the platform. The swap functionality uses the `SwapModal` component and integrates with the `useSwapData` and `useTokenSwap` hooks for real-time conversion rates and execution.
+
+## Accessing the Swap Feature
+
+<Steps>
+  <Step title="Navigate to Portfolio">
+    From your portfolio dashboard, locate the action buttons in the header area.
+  </Step>
+  
+  <Step title="Click Swap">
+    Click the **Swap** button (identified by the swap icon) to open the swap modal. This button is managed by the `SwapAction` component.
+  </Step>
+  
+  <Step title="Swap Modal Opens">
+    The `SwapModal` component (`domain/portfolio/components/header-actions/swap-modal.tsx`) appears with input fields for conversion.
+  </Step>
+</Steps>
+
+## Performing a Token Swap
+
+### Step-by-Step Swap Process
+
+<Steps>
+  <Step title="Select Source Token">
+    In the **Send** field, choose the cryptocurrency you want to convert from. The dropdown shows:
+    - Token symbol and name
+    - Token icon
+    - Your available balance for that token
+    
+    The token list is populated by `useSwapData` which fetches available balances via `useAvailables`.
+  </Step>
+  
+  <Step title="Select Destination Token">
+    In the **Receive** field, select the cryptocurrency you want to receive. Only compatible conversion pairs are shown based on `useConversionPairs` data.
+    
+    <Warning>
+      You cannot swap a token for itself. The Swap button will be disabled if source and destination tokens are the same.
+    </Warning>
+  </Step>
+  
+  <Step title="Enter Amount">
+    Type the amount you want to swap in the **Send** field. You can:
+    - Manually enter an amount
+    - Click **MAX** to use your full available balance
+    - Click **MIN** to use the minimum swap amount (if applicable)
+  </Step>
+  
+  <Step title="Review Conversion">
+    As you type, the **Receive** field automatically calculates the amount you'll receive using real-time conversion rates from `useTokenSwap`.
+    
+    The conversion uses the `convertTo` function:
+    ```tsx
+    const convertedReceive = convertTo(tokenValue);
+    ```
+  </Step>
+  
+  <Step title="Review Fees">
+    Below the Swap button, you'll see the transaction fee displayed:
+    ```
+    (Fee: 0.5 USDC)
+    ```
+    
+    The fee is calculated as:
+    ```tsx
+    Number(commissionRate) * Number(value)
+    ```
+  </Step>
+  
+  <Step title="Execute Swap">
+    Click **Swap** to execute the transaction. The button shows:
+    - **Swap**: When ready to execute
+    - **Swapping...**: During transaction processing (with loading spinner)
+    
+    The swap is executed via the `handleSwap` function with your user ID.
+  </Step>
+</Steps>
+
+## Understanding Conversion Rates
+
+### Real-Time Rate Updates
+
+The swap modal uses the `useTokenSwap` hook to provide:
+
+- **Live Conversion Rates**: Fetched from `/api/conversion-pairs` endpoint
+- **Bidirectional Conversion**: Calculate from source-to-destination or destination-to-source
+- **Automatic Recalculation**: Rates update when you switch tokens or change focus between fields
+
+<Info>
+  The conversion rate automatically refreshes at intervals defined by `POLL_AVAILABLES_INTERVAL` to ensure you always get current market rates.
+</Info>
+
+### Conversion Functions
+
+Two conversion functions are available:
+
+1. **`convertTo(value)`**: Converts from source token to destination token
+2. **`convertFrom(value)`**: Converts from destination token back to source token
+
+<CodeGroup>
+```tsx Send Field Focus
+// User edits the Send field
+const handleChangeValue = (tokenValue: string) => {
+  setValue(tokenValue);
+  if (tokenValue) {
+    const convertedReceive = convertTo(tokenValue);
+    setValueReceive(convertedReceive);
+  }
+};
+```
+
+```tsx Receive Field Focus
+// User edits the Receive field
+const handleChangeValueReceive = (valueReceive: string) => {
+  setValueReceive(valueReceive);
+  if (valueReceive) {
+    const convertedValue = convertFrom(valueReceive);
+    setValue(convertedValue);
+  }
+};
+```
+</CodeGroup>
+
+## Swap Token Direction
+
+### Reverse the Swap
+
+You can quickly reverse the swap direction without re-entering amounts:
+
+<Steps>
+  <Step title="Click Swap Direction Button">
+    Click the circular button with the arrow icon between the Send and Receive fields.
+  </Step>
+  
+  <Step title="Tokens Switch">
+    The source and destination tokens swap positions, and amounts are recalculated:
+    ```tsx
+    handleSwapSelectors(tokenLabel, tokenSwapLabel);
+    ```
+  </Step>
+  
+  <Step title="Amounts Update">
+    The conversion amounts automatically update based on the reversed direction.
+  </Step>
+</Steps>
+
+<Note>
+  The swap direction button shows different icons:
+  - **Arrow Down**: Default state
+  - **Arrow Up-Down**: On hover, indicating the swap action
+</Note>
+
+## Validation and Requirements
+
+### Swap Conditions
+
+The Swap button is only enabled when ALL conditions are met:
+
+1. **Valid Amount**: Amount is greater than zero and within your available balance
+2. **Minimum Amount**: Meets the minimum swap amount (`minAmount`) if specified
+3. **Different Tokens**: Source and destination tokens are different
+4. **Commission Rate Available**: Fee structure is loaded
+5. **Conversion Rate Available**: Live rates are fetched successfully
+
+```tsx
+const conditionsSuccess =
+  isValidValue &&
+  assetSelector.options[assetSelector.selectedIndex]?.id !==
+    assetSwapSelector.options[assetSwapSelector.selectedIndex]?.id &&
+  commissionRate &&
+  minAmount;
+```
+
+### Validation Checks
+
+The `useValueVerifier` hook validates your input:
+
+- **Minimum**: Cannot be below the minimum swap amount
+- **Maximum**: Cannot exceed your available balance
+- **Non-Zero**: Must enter an amount greater than zero
+
+<Warning>
+  If your amount exceeds your available balance, the Swap button will be disabled and you cannot proceed.
+</Warning>
+
+## Swap Fees
+
+### Fee Structure
+
+Crocante charges a commission on each swap:
+
+- **Fee Display**: Shown below the Swap button in the destination token
+- **Fee Calculation**: `commissionRate × swap amount`
+- **Fee Token**: Always charged in the destination (receive) token
+
+<Info>
+  The fee percentage varies by token pair. Check the fee display before confirming your swap.
+</Info>
+
+## Advanced Features
+
+### Dual Input Editing
+
+You can edit either the Send or Receive field:
+
+<Tabs>
+  <Tab title="Edit Send Amount">
+    When you edit the **Send** field:
+    1. Type your desired send amount
+    2. The **Receive** field automatically calculates what you'll get
+    3. Fees are deducted from the receive amount
+  </Tab>
+  
+  <Tab title="Edit Receive Amount">
+    When you edit the **Receive** field:
+    1. Type your desired receive amount
+    2. The **Send** field automatically calculates what you need to send
+    3. The send amount includes the necessary amount to cover fees
+  </Tab>
+</Tabs>
+
+The modal tracks which field has focus using `inputReceiveFocused` state to determine which calculation to perform.
+
+### Quick Amount Selection
+
+<CardGroup cols={2}>
+  <Card title="MAX Button" icon="arrow-up">
+    Click **MAX** in the Send field to use your entire available balance for the swap.
+  </Card>
+  
+  <Card title="MIN Button" icon="arrow-down">
+    Click **MIN** (when available) to set the minimum required swap amount.
+  </Card>
+</CardGroup>
+
+## Conversion Pairs
+
+### Supported Pairs
+
+The available conversion pairs are determined by:
+
+- **Backend Configuration**: `/api/conversion-pairs` endpoint
+- **Dynamic Loading**: Pairs update based on platform liquidity
+- **Token Availability**: You can only swap tokens you currently hold
+
+The `useConversionPairs` hook fetches available pairs:
+
+```tsx
+conversionPairs[selectedTokenFrom]?.forEach((currency) => {
+  // Build list of destination tokens
+});
+```
+
+<Note>
+  If a destination token is not showing in the dropdown, that conversion pair may not be currently supported or available.
+</Note>
+
+## Transaction Processing
+
+### Swap Status Indicators
+
+<Steps>
+  <Step title="Ready to Swap">
+    Button displays: **Swap** with fee information below
+  </Step>
+  
+  <Step title="Processing">
+    Button displays: **Swapping...** with animated spinner
+    
+    ```tsx
+    <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+    ```
+  </Step>
+  
+  <Step title="Completion">
+    Modal closes and your portfolio updates with new balances
+  </Step>
+</Steps>
+
+<Warning>
+  Do not close the modal while a swap is processing. Wait for the transaction to complete.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Check Rates" icon="chart-line">
+    Compare the conversion rate with external markets to ensure competitive pricing.
+  </Card>
+  
+  <Card title="Review Fees" icon="receipt">
+    Always check the fee amount before confirming your swap - it varies by token pair.
+  </Card>
+  
+  <Card title="Sufficient Balance" icon="wallet">
+    Ensure you have enough balance to cover both the swap amount and any fees.
+  </Card>
+  
+  <Card title="Network Updates" icon="rotate">
+    After swapping, allow a moment for your portfolio balances to refresh.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Swap Button Disabled
+
+**Check these conditions:**
+- Amount is greater than zero
+- Amount doesn't exceed available balance
+- Source and destination tokens are different
+- Amount meets minimum swap requirement
+- Conversion rates have loaded (no loading spinner)
+
+### Conversion Pair Not Available
+
+- Try swapping through an intermediate token (e.g., BTC → USDC → ETH)
+- Check if the destination token is currently supported
+- Contact support if a previously available pair is missing
+
+### Incorrect Amounts Displayed
+
+- Wait for conversion rates to load (indicated by loading spinner)
+- Refresh the page to reload latest rates
+- Check if you're editing the correct field (Send vs. Receive)
+
+### Swap Failed
+
+- Verify you have sufficient balance
+- Ensure your session hasn't expired
+- Check network connectivity
+- Try again in a few moments
+- Contact support if the issue persists
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Managing Assets" icon="chart-pie" href="/guides/managing-assets">
+    View your portfolio and monitor balances after swapping
+  </Card>
+  
+  <Card title="Deposit & Withdrawal" icon="money-bill-transfer" href="/guides/deposit-withdrawal">
+    Add more funds to swap or withdraw converted assets
+  </Card>
+</CardGroup>

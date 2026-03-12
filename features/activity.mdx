@@ -1,0 +1,294 @@
+---
+title: Activity & Transaction History
+description: Track all transactions and operations across your Crocante account
+icon: list-check
+---
+
+## Overview
+
+The Activity feature provides a comprehensive transaction history for all operations performed on the Crocante platform. Monitor deposits, withdrawals, swaps, stakes, loans, and transfers with detailed filtering and search capabilities.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Complete Transaction Log" icon="clock-rotate-left">
+    View every transaction with timestamps, amounts, and status updates
+  </Card>
+  <Card title="Advanced Filtering" icon="filter">
+    Filter by transaction type, status, date range, and asset
+  </Card>
+  <Card title="Real-Time Updates" icon="arrows-rotate">
+    See pending transactions update to completed or failed in real-time
+  </Card>
+  <Card title="Transaction Details" icon="magnifying-glass">
+    Drill into each transaction for complete information including fees and confirmations
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Activity Table
+
+The `ActivityTable` component displays:
+
+- **Type**: Transaction category with icon
+  - Deposit (incoming funds)
+  - Withdrawal (outgoing transfers)
+  - Swap (asset exchanges)
+  - Stake (staking deposits)
+  - Unstake (staking withdrawals)
+  - Loan (borrowing transactions)
+  - Repayment (loan payments)
+  - Transfer (internal moves)
+
+- **Date**: Transaction timestamp
+  - Primary: Date (YYYY-MM-DD)
+  - Subtitle: Time (HH:MM:SS)
+
+- **Amount**: Transaction value
+  - Primary: Asset amount with symbol
+  - Subtitle: USD equivalent value
+
+- **Status**: Current transaction state
+  - Success (completed transactions)
+  - Pending (awaiting confirmation)
+  - Failed (rejected or error)
+  - Cancelled (user-cancelled operations)
+
+Each row uses the data structure:
+
+```tsx
+{
+  id: string,
+  type: string,
+  uiDisplay: {
+    opIcon: ReactNode,  // Icon for transaction type
+    date: string,       // Formatted date
+    time: string,       // Formatted time
+    amount: string,     // Primary amount
+    subAmount: string   // USD equivalent
+  },
+  status: string
+}
+```
+
+### Filtering System
+
+The `useActivityFilters` hook provides:
+
+<Tabs>
+  <Tab title="Transaction Type">
+    Filter by operation category:
+    - All Transactions (default)
+    - Deposits only
+    - Withdrawals only  
+    - Swaps only
+    - Staking operations
+    - Loan operations
+    - Transfers only
+  </Tab>
+  
+  <Tab title="Status">
+    Filter by transaction state:
+    - All Statuses (default)
+    - Success
+    - Pending
+    - Failed
+    - Cancelled
+    
+    Uses `FILTER_STATUS` constants for consistent filtering.
+  </Tab>
+  
+  <Tab title="Pagination">
+    Navigate large transaction sets:
+    - Page-based navigation
+    - Configurable page size
+    - Jump to specific page
+    - Total transaction count
+  </Tab>
+</Tabs>
+
+### Filter Modal
+
+Click the filters button to open the `Modal` component with:
+
+- **Transaction Type Selector**: Dropdown to select operation type
+- **Status Selector**: Dropdown to filter by status
+- **Active Filters Badge**: Shows count of applied filters
+- **Clear Filters**: Reset to default view
+
+The modal uses dedicated `Select` components with:
+- `txTypeSelector` props for transaction type
+- `statusSelector` props for status filtering
+
+## How to Use Activity
+
+<Steps>
+  <Step title="Navigate to Activity">
+    Go to the Activity page from the main navigation. You'll see a table of recent transactions.
+  </Step>
+  
+  <Step title="Review Recent Transactions">
+    The table shows latest transactions first. Each row displays:
+    - Icon indicating transaction type
+    - Date and time of operation
+    - Amount and asset
+    - Current status badge
+  </Step>
+  
+  <Step title="Apply Filters">
+    Click the filter icon to open filtering options:
+    - Select specific transaction types to focus on
+    - Filter by status to find pending or failed transactions
+    - Combine filters for precise queries
+  </Step>
+  
+  <Step title="Navigate Pages">
+    Use pagination controls at the bottom to:
+    - Move to next/previous page
+    - Jump to a specific page number
+    - View total transaction count
+  </Step>
+  
+  <Step title="View Transaction Details">
+    Click on any transaction row to see complete details including:
+    - Transaction ID and hash
+    - Network confirmations
+    - Gas fees paid
+    - Wallet addresses involved
+    - Block explorer links
+  </Step>
+</Steps>
+
+## Transaction Statuses
+
+Understanding transaction states:
+
+<Info>
+**Success**: Transaction completed successfully and is finalized on-chain or in the system.
+</Info>
+
+<Warning>
+**Pending**: Transaction is being processed. For blockchain transactions, this means waiting for network confirmations.
+</Warning>
+
+<Note>
+**Failed**: Transaction encountered an error. Common reasons include insufficient balance, gas issues, or validation failures.
+</Note>
+
+<Note>
+**Cancelled**: User cancelled the transaction before completion, or an approval workflow was rejected.
+</Note>
+
+## Data Components
+
+The activity feature uses:
+
+- **useActivityData**: Fetches transaction history with pagination
+  - Parameters: `page`, `status`, `txType`
+  - Returns: `activityData` array and `isLoading` state
+  - Automatically refetches on filter changes
+
+- **useActivityFilters**: Manages filter state
+  - Tracks `page`, `status`, `txType` values
+  - Provides `activeFilters` count for badge
+  - Controls filter modal open/close state
+  - Returns selector props for dropdowns
+
+## Activity Table Implementation
+
+The table uses the reusable `Table` component:
+
+```tsx
+<Table
+  isLoading={isLoading || !activityData}
+  tableHeaders={[
+    { id: "typeHeader", label: "Type", className: "text-left" },
+    { id: "dateHeader", label: "Date", className: "text-left" },
+    { id: "amountHeader", label: "Amount", className: "text-left" },
+    { id: "statusHeader", label: "Status", className: "text-left" }
+  ]}
+  rows={activityData.map((tx) => ({ /* row data */ }))}
+  filters={{
+    page,
+    setPage: setPageLocal,
+    filtersClassName,
+    activeFilters,
+    openFiltersModal
+  }}
+/>
+```
+
+## Real-Time Updates
+
+Transaction statuses update automatically:
+
+- Pending transactions refresh periodically
+- Completed transactions show final confirmation
+- Failed transactions display error details
+- Toast notifications for status changes
+
+<Tip>
+Keep the Activity page open while waiting for transaction confirmations. The table will update automatically when status changes.
+</Tip>
+
+## Badge Styling
+
+Status badges use the `Badge` component with variants:
+
+- **Success**: Green badge for completed transactions
+- **Pending**: Blue badge for in-progress operations
+- **Failed**: Red badge for errors
+- **Cancelled**: Gray/accent badge for user cancellations
+
+```tsx
+<Badge
+  label={tx.status.charAt(0).toUpperCase() + tx.status.slice(1).toLowerCase()}
+  variant={tx.status.toUpperCase() === FILTER_STATUS.CANCELED ? "accent" : "primary"}
+/>
+```
+
+## Exporting Data
+
+<Info>
+Future versions will include CSV/PDF export functionality for transaction history, useful for accounting and tax reporting.
+</Info>
+
+## Best Practices
+
+<Tip>
+Regularly review your Activity page to spot any unauthorized transactions or unexpected fees.
+</Tip>
+
+<Tip>
+Use the transaction type filter to isolate specific operations when reconciling accounts or preparing financial reports.
+</Tip>
+
+<Warning>
+If you see unexpected failed transactions, contact support. Failed transactions may indicate configuration issues or insufficient permissions.
+</Warning>
+
+## Troubleshooting
+
+**Transactions not appearing:**
+- Clear filters to ensure nothing is hidden
+- Check pagination - transaction may be on another page
+- Verify the operation completed (check source feature like Portfolio or Staking)
+- Refresh the page to reload data
+
+**Stuck on Pending:**
+- Blockchain transactions may take time depending on network congestion
+- Check block explorer for on-chain status
+- Contact support if pending for >1 hour
+
+**Filter not working:**
+- Ensure filter modal shows correct selections
+- Try clearing all filters and reapplying
+- Check that transactions exist matching filter criteria
+
+## Related Features
+
+- [Portfolio](/features/portfolio) - Source of deposit/withdrawal transactions
+- [Staking](/features/staking) - Generates stake/unstake activity
+- [Credit](/features/credit) - Creates loan and repayment transactions
+- [Governance](/features/governance) - Approval workflows affect transaction status

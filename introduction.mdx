@@ -1,0 +1,212 @@
+---
+title: Introduction to Crocante
+description: A comprehensive digital asset management platform built for institutional and professional investors
+---
+
+# Welcome to Crocante
+
+Crocante is a modern, enterprise-grade digital asset management platform designed for institutional investors and high-net-worth individuals. Built with Next.js 16 and TypeScript, Crocante provides a unified interface for managing cryptocurrencies, traditional currencies, and commodities across multiple custodians, exchanges, and wallets.
+
+## What is Crocante?
+
+Crocante is a SaaS platform that aggregates and manages digital assets across your entire portfolio. Whether your assets are held in custody solutions, exchanges, internal wallets, or traditional banks, Crocante provides a single pane of glass to view, manage, and transact with your holdings.
+
+<CardGroup cols={2}>
+  <Card title="Portfolio Management" icon="building">
+    Unified view of all your digital and traditional assets across multiple custodians, exchanges, and wallets with real-time balance updates
+  </Card>
+  <Card title="Staking & Yield" icon="chart-line">
+    Participate in staking programs to earn yield on your crypto holdings with support for multiple staking types and validators
+  </Card>
+  <Card title="Credit Services" icon="credit-card">
+    Access credit facilities and loan management tools to leverage your digital assets as collateral
+  </Card>
+  <Card title="Activity Tracking" icon="activity">
+    Monitor all transactions, transfers, swaps, and operations across your portfolio with detailed audit trails
+  </Card>
+</CardGroup>
+
+## Key Features
+
+### Multi-Custodian Support
+
+Crocante integrates with multiple asset custodians, allowing you to:
+- View consolidated balances across all providers
+- Execute transfers between custodians
+- Track assets held in banks, exchanges, OTC desks, and internal wallets
+- Maintain complete custody independence
+
+### Real-Time Portfolio Analytics
+
+The platform provides comprehensive portfolio analytics including:
+- **Total Balance Tracking**: Real-time aggregation of all asset values
+- **Asset Allocation**: Visual breakdown by asset type (cryptocurrencies, currencies, commodities)
+- **Currency & Token Tables**: Detailed views of individual holdings with current valuations
+- **Custom Filtering**: Filter by custodian, exchange, wallet, or asset type
+
+### Secure Authentication & Session Management
+
+Crocante implements enterprise-grade security:
+- **BFF (Backend-for-Frontend) Architecture**: All API calls proxied through Next.js API routes
+- **HttpOnly Cookie Sessions**: Session tokens never exposed to client-side JavaScript
+- **Automatic Session Renewal**: Background session management with configurable polling intervals
+- **Multi-Step Registration**: KYC workflow with email verification, personal information, asset origin declaration, and document upload
+
+See [Authentication API](/api/auth/login) for implementation details.
+
+### Asset Operations
+
+Perform common operations directly from the platform:
+
+<CardGroup cols={3}>
+  <Card title="Deposit" icon="arrow-down">
+    Generate deposit addresses and QR codes for receiving cryptocurrency deposits
+  </Card>
+  <Card title="Send" icon="arrow-up">
+    Transfer assets between custodians or to external addresses with network selection
+  </Card>
+  <Card title="Swap" icon="refresh">
+    Exchange between different cryptocurrencies with real-time quotes and conversion tracking
+  </Card>
+  <Card title="Stake" icon="coins">
+    Participate in staking programs to earn yield on supported assets
+  </Card>
+  <Card title="Credit" icon="landmark">
+    Request loans using your digital assets as collateral
+  </Card>
+  <Card title="Governance" icon="shield">
+    Participate in protocol governance (mock mode feature)
+  </Card>
+</CardGroup>
+
+## Why Crocante?
+
+### Built for Scale
+
+Crocante is architected to handle institutional-grade portfolios:
+- **Efficient Data Fetching**: React Query with configurable polling intervals (15s for portfolio data, 5min for user data)
+- **Optimistic Updates**: Instant UI feedback with background revalidation
+- **Mock Mode**: Full-featured development and testing mode without backend dependencies
+- **Type Safety**: End-to-end TypeScript with Zod schema validation
+
+### Modern Developer Experience
+
+Built with the latest web technologies:
+- **Next.js 16**: App Router, Server Components, and API Routes
+- **React 19**: Latest React features with concurrent rendering
+- **Radix UI**: Accessible, unstyled component primitives
+- **TailwindCSS 4**: Utility-first CSS with custom design system
+- **Axios**: HTTP client with interceptors for error handling
+- **React Hook Form + Zod**: Type-safe form validation
+
+### Domain-Driven Architecture
+
+Crocante follows domain-driven design principles:
+
+```plaintext
+app/
+├── (dashboard)/          # Dashboard route group
+│   ├── portfolio/        # Portfolio page
+│   ├── staking/          # Staking page
+│   ├── credit/           # Credit page
+│   └── activity/         # Activity page
+├── api/                  # BFF API routes
+│   └── auth/             # Authentication endpoints
+domain/                   # Domain modules
+├── portfolio/            # Portfolio domain
+│   ├── components/       # Portfolio UI components
+│   └── hooks/            # Portfolio business logic
+├── staking/              # Staking domain
+├── credit/               # Credit domain
+└── activity/             # Activity domain
+services/                 # Shared services
+├── api/                  # API client layer
+├── hooks/                # Shared React Query hooks
+└── react-query/          # Query client config
+```
+
+See [Architecture Overview](/architecture) for detailed technical architecture.
+
+## Use Cases
+
+### Institutional Asset Management
+
+Manage large portfolios across multiple custodians with:
+- Consolidated reporting and analytics
+- Multi-signature approval workflows (enterprise feature)
+- Compliance and audit trail capabilities
+- Risk management and exposure tracking
+
+### High-Net-Worth Individual Portfolios
+
+Individual investors can:
+- Track all digital assets in one place
+- Execute transfers and swaps seamlessly
+- Earn yield through staking
+- Access credit facilities
+
+### Treasury Management
+
+Corporate treasuries can use Crocante for:
+- Managing digital asset reserves
+- Executing treasury operations
+- Generating reports for accounting
+- Maintaining custody relationships
+
+## Getting Started
+
+Ready to start using Crocante? Follow our [Quickstart Guide](/quickstart) to:
+1. Register for an account
+2. Complete KYC verification
+3. Connect your first custodian
+4. View your portfolio
+5. Execute your first operation
+
+<Note>
+  Crocante supports both **real mode** (connected to backend APIs) and **mock mode** (simulated data for testing). Mock mode allows you to explore all features without connecting real assets.
+</Note>
+
+## Platform Components
+
+Crocante consists of several integrated modules:
+
+| Module | Description | Key Features |
+|--------|-------------|-------------|
+| **Portfolio** | Asset management dashboard | Consolidated view, asset allocation, multi-custodian tracking |
+| **Staking** | Yield generation | Multiple staking types, validator selection, redemption |
+| **Credit** | Loan management | Borrow against assets, loan history, liability tracking |
+| **Activity** | Transaction history | All operations, filtering, export capabilities |
+| **Custody** | Custodian management | Multiple custody providers (mock mode) |
+| **Invest** | Investment opportunities | Fund exploration (mock mode) |
+| **Governance** | Protocol participation | Voting and proposals (mock mode) |
+| **Settings** | User preferences | Profile management, security settings |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running with Crocante in minutes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand the technical architecture and design patterns
+  </Card>
+  <Card title="Authentication API" icon="lock" href="/api/auth/login">
+    Explore authentication endpoints and session management
+  </Card>
+  <Card title="Components" icon="cube" href="/components/overview">
+    Learn about the reusable UI components
+  </Card>
+</CardGroup>
+
+## Support & Resources
+
+Need help? Check out these resources:
+
+- **Documentation**: Comprehensive guides and API reference
+- **Example Code**: Real code examples from the source
+- **Community**: Join discussions with other users
+- **Enterprise Support**: Dedicated support for institutional clients
+
+<Tip>
+  **Pro Tip**: Start in mock mode to familiarize yourself with the platform before connecting real assets. You can switch modes at any time from the login screen.
+</Tip>

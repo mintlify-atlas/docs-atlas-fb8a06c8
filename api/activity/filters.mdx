@@ -1,0 +1,472 @@
+---
+title: 'Filtering & Parameters'
+description: 'Advanced filtering options for transaction history queries'
+icon: 'filter'
+---
+
+## Overview
+
+The Activity API provides flexible filtering capabilities to help you retrieve specific subsets of transaction data. Filters can be combined to create precise queries.
+
+## Available Filters
+
+### Status Filtering
+
+Filter transactions by their current status using the `statuses` query parameter.
+
+<ParamField query="statuses" type="string[]">
+  Filter by transaction status. Can be provided multiple times to include multiple statuses.
+</ParamField>
+
+#### Available Status Values
+
+<ResponseField name="ACTIVE" type="status">
+  Transactions that are currently in progress or open positions.
+  
+  **Examples:**
+  - Active staking positions
+  - Open loan positions
+  - Pending withdrawals
+  - Unfilled or partially filled trade orders
+</ResponseField>
+
+<ResponseField name="COMPLETED" type="status">
+  Transactions that have been successfully completed and closed.
+  
+  **Examples:**
+  - Completed deposits
+  - Executed trades
+  - Closed staking positions
+  - Fully repaid loans
+</ResponseField>
+
+<ResponseField name="CANCELED" type="status">
+  Transactions that were canceled before completion.
+  
+  **Examples:**
+  - Rejected withdrawal requests
+  - Canceled trade orders
+  - Declined admin approvals
+</ResponseField>
+
+#### Status Filter Examples
+
+```bash Single Status
+GET /activity?statuses=COMPLETED
+```
+
+```bash Multiple Statuses
+GET /activity?statuses=ACTIVE&statuses=COMPLETED
+```
+
+```bash All Non-Canceled Transactions
+GET /activity?statuses=ACTIVE&statuses=COMPLETED
+```
+
+### Transaction Type Filtering
+
+Filter by transaction type using the `fullTypes` query parameter. Use the `%` wildcard to match all subtypes.
+
+<ParamField query="fullTypes" type="string[]">
+  Filter by transaction type and subtype. The `%` wildcard matches all variations of a type.
+</ParamField>
+
+#### Available Transaction Types
+
+<ResponseField name="DEPOSIT%" type="transaction type">
+  All deposit transactions.
+  
+  **Subtypes:**
+  - `DEPOSIT.ADMIN` - Admin-approved deposits
+  - `DEPOSIT.CRYPTO` - Blockchain deposits
+  
+  **Use Case:** Track all incoming funds to user accounts.
+</ResponseField>
+
+<ResponseField name="WITHDRAWAL%" type="transaction type">
+  All withdrawal transactions.
+  
+  **Subtypes:**
+  - `WITHDRAWAL.ADMIN` - Admin-approved withdrawals
+  - `WITHDRAWAL.CRYPTO` - Blockchain withdrawals
+  
+  **Use Case:** Monitor outgoing funds and withdrawal requests.
+</ResponseField>
+
+<ResponseField name="STAKING%" type="transaction type">
+  All staking operations.
+  
+  **Full Type:** `STAKING`
+  
+  **Use Case:** View all staking positions including fixed and flexible staking.
+</ResponseField>
+
+<ResponseField name="TRADE%" type="transaction type">
+  All trading operations.
+  
+  **Subtypes:**
+  - `TRADE.CONVERSION` - Currency swaps/conversions
+  - `TRADE` - Other trading activity
+  
+  **Use Case:** Analyze trading history and executed orders.
+</ResponseField>
+
+<ResponseField name="TRADE.CONVERSION%" type="transaction type">
+  Specifically currency conversion/swap operations.
+  
+  **Use Case:** Track currency exchanges separate from other trading activity.
+</ResponseField>
+
+<ResponseField name="LOAN%" type="transaction type">
+  All loan-related operations.
+  
+  **Full Type:** `LOAN`
+  
+  **Use Case:** Monitor borrowing activity and loan positions.
+</ResponseField>
+
+<ResponseField name="TRANSFER%" type="transaction type">
+  Internal platform transfers between users.
+  
+  **Full Type:** `TRANSFER`
+  
+  **Use Case:** Track peer-to-peer transfers within the platform.
+</ResponseField>
+
+#### Transaction Type Filter Examples
+
+```bash Single Type
+GET /activity?fullTypes=STAKING%
+```
+
+```bash Multiple Types
+GET /activity?fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%
+```
+
+```bash Specific Subtype
+GET /activity?fullTypes=TRADE.CONVERSION%
+```
+
+```bash All Financial Activity (Excluding Staking/Loans)
+GET /activity?fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%&fullTypes=TRADE%
+```
+
+### Combining Filters
+
+You can combine status and type filters to create very specific queries.
+
+```bash Active Staking Positions
+GET /activity?statuses=ACTIVE&fullTypes=STAKING%
+```
+
+```bash Completed Deposits and Withdrawals
+GET /activity?statuses=COMPLETED&fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%
+```
+
+```bash Active and Completed Trades
+GET /activity?statuses=ACTIVE&statuses=COMPLETED&fullTypes=TRADE%
+```
+
+```bash Canceled Withdrawals Only
+GET /activity?statuses=CANCELED&fullTypes=WITHDRAWAL%
+```
+
+## Pagination Parameters
+
+<ParamField query="page" type="number" default="1" required>
+  The page number to retrieve. Pages are 1-indexed.
+  
+  **Constraints:**
+  - Minimum value: 1
+  - No maximum (continues until no more results)
+</ParamField>
+
+<ParamField query="size" type="number" default="10">
+  Number of transactions to return per page.
+  
+  **Constraints:**
+  - Default: 10
+  - Maximum: 10 (enforced by the API)
+  
+  <Note>
+    Currently, the API enforces a maximum page size of 10 transactions per request.
+  </Note>
+</ParamField>
+
+### Pagination Examples
+
+```bash First Page (Default)
+GET /activity?page=1
+```
+
+```bash Second Page
+GET /activity?page=2
+```
+
+```bash Third Page with Filters
+GET /activity?page=3&statuses=COMPLETED&fullTypes=TRADE%
+```
+
+## Filter Behavior
+
+### Default Behavior
+
+When no filters are provided:
+
+```bash
+GET /activity?page=1
+```
+
+- Returns **all** transaction types
+- Returns **all** statuses (ACTIVE, COMPLETED, CANCELED)
+- Returns the first 10 transactions
+- Ordered by `openedAt` timestamp (newest first)
+
+### Multiple Values (OR Logic)
+
+When you provide multiple values for the same parameter, they are combined with **OR** logic:
+
+```bash
+GET /activity?statuses=ACTIVE&statuses=COMPLETED
+```
+
+**Returns:** Transactions that are ACTIVE **OR** COMPLETED (excludes CANCELED)
+
+```bash
+GET /activity?fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%
+```
+
+**Returns:** DEPOSIT transactions **OR** WITHDRAWAL transactions
+
+### Multiple Parameters (AND Logic)
+
+When you provide different parameters, they are combined with **AND** logic:
+
+```bash
+GET /activity?statuses=COMPLETED&fullTypes=DEPOSIT%
+```
+
+**Returns:** Transactions that are COMPLETED **AND** are DEPOSIT type
+
+## Common Filter Patterns
+
+### Portfolio Monitoring
+
+View all current active positions:
+
+```bash
+GET /activity?statuses=ACTIVE&fullTypes=STAKING%&fullTypes=LOAN%
+```
+
+### Audit Trail
+
+View all completed financial transactions:
+
+```bash
+GET /activity?statuses=COMPLETED&fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%
+```
+
+### Trading History
+
+View all completed trades:
+
+```bash
+GET /activity?statuses=COMPLETED&fullTypes=TRADE%
+```
+
+### Pending Actions
+
+View transactions requiring attention:
+
+```bash
+GET /activity?statuses=ACTIVE&fullTypes=WITHDRAWAL%
+```
+
+### Failed Transactions
+
+View all canceled transactions:
+
+```bash
+GET /activity?statuses=CANCELED
+```
+
+## Implementation Best Practices
+
+<Tip>
+  **Use specific filters** to reduce payload size and improve performance. Only fetch the data you need.
+</Tip>
+
+<Warning>
+  **Wildcard matching** with `%` is required for the `fullTypes` parameter. Omitting it will result in no matches.
+  
+  - **Correct:** `fullTypes=DEPOSIT%`
+  - **Incorrect:** `fullTypes=DEPOSIT`
+</Warning>
+
+<Info>
+  **URL Encoding:** The `%` character in query parameters must be URL-encoded as `%25` in some HTTP clients.
+  
+  Example: `fullTypes=DEPOSIT%25` instead of `fullTypes=DEPOSIT%`
+</Info>
+
+### Client-Side Implementation
+
+#### JavaScript/TypeScript Example
+
+```typescript
+// Building filter URLs with multiple parameters
+const buildActivityUrl = (filters: {
+  page?: number;
+  statuses?: string[];
+  types?: string[];
+}) => {
+  const params = new URLSearchParams();
+  
+  // Add page
+  params.append('page', (filters.page || 1).toString());
+  params.append('size', '10');
+  
+  // Add status filters
+  filters.statuses?.forEach(status => {
+    params.append('statuses', status);
+  });
+  
+  // Add type filters (% is automatically encoded)
+  filters.types?.forEach(type => {
+    params.append('fullTypes', `${type}%`);
+  });
+  
+  return `/activity?${params.toString()}`;
+};
+
+// Usage examples
+const activeStaking = buildActivityUrl({
+  statuses: ['ACTIVE'],
+  types: ['STAKING']
+});
+// Result: /activity?page=1&size=10&statuses=ACTIVE&fullTypes=STAKING%25
+
+const completedTrades = buildActivityUrl({
+  page: 2,
+  statuses: ['COMPLETED'],
+  types: ['TRADE']
+});
+// Result: /activity?page=2&size=10&statuses=COMPLETED&fullTypes=TRADE%25
+```
+
+#### Python Example
+
+```python
+from urllib.parse import urlencode, quote
+
+def build_activity_url(page=1, statuses=None, types=None):
+    params = [
+        ('page', str(page)),
+        ('size', '10')
+    ]
+    
+    # Add status filters
+    if statuses:
+        for status in statuses:
+            params.append(('statuses', status))
+    
+    # Add type filters
+    if types:
+        for tx_type in types:
+            params.append(('fullTypes', f'{tx_type}%'))
+    
+    return f'/activity?{urlencode(params)}'
+
+# Usage examples
+active_staking = build_activity_url(
+    statuses=['ACTIVE'],
+    types=['STAKING']
+)
+# Result: /activity?page=1&size=10&statuses=ACTIVE&fullTypes=STAKING%25
+
+completed_deposits = build_activity_url(
+    page=3,
+    statuses=['COMPLETED'],
+    types=['DEPOSIT', 'WITHDRAWAL']
+)
+# Result: /activity?page=3&size=10&statuses=COMPLETED&fullTypes=DEPOSIT%25&fullTypes=WITHDRAWAL%25
+```
+
+## Filter Response Validation
+
+### Empty Results
+
+If no transactions match your filters, the API returns an empty array:
+
+```json
+{
+  "data": [],
+  "status": 200
+}
+```
+
+This is a **valid response**, not an error. It means no transactions match your filter criteria.
+
+### Invalid Filter Values
+
+If you provide invalid filter values, the API may:
+
+1. **Ignore invalid values** and return results for valid filters only
+2. **Return an empty result set** if all filters are invalid
+3. **Return a 400 error** if the parameter format is malformed
+
+<Warning>
+  Always validate filter values on the client side before sending requests to avoid unnecessary API calls.
+</Warning>
+
+## Performance Considerations
+
+<Tip>
+  **Filter early, filter often.** Using specific filters reduces:
+  - Network bandwidth
+  - Response parsing time
+  - Client-side filtering overhead
+  - Server load
+</Tip>
+
+### Optimal Query Patterns
+
+**Good:** Specific, targeted queries
+```bash
+GET /activity?statuses=ACTIVE&fullTypes=STAKING%
+```
+
+**Better:** Even more specific
+```bash
+GET /activity?page=1&statuses=ACTIVE&fullTypes=STAKING%
+```
+
+**Avoid:** Fetching all data and filtering client-side
+```bash
+# Don't do this and then filter in JavaScript
+GET /activity?page=1
+```
+
+### Caching Recommendations
+
+- **Completed transactions** rarely change → cache for longer periods (5-15 minutes)
+- **Active transactions** change frequently → cache for shorter periods (30-60 seconds)
+- **Real-time updates** → implement polling with appropriate intervals
+
+```typescript
+const CACHE_DURATIONS = {
+  COMPLETED: 5 * 60 * 1000, // 5 minutes
+  ACTIVE: 30 * 1000,        // 30 seconds
+  CANCELED: 10 * 60 * 1000  // 10 minutes
+};
+```
+
+## Related Resources
+
+<Card title="Transaction History" icon="clock-rotate-left" href="/api/activity/transactions">
+  Complete API reference for the transaction history endpoint
+</Card>
+
+<Card title="Staking API" icon="coins" href="/api/staking">
+  Dedicated endpoints for staking operations
+</Card>

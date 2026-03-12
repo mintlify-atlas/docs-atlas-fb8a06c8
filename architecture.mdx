@@ -1,0 +1,974 @@
+---
+title: Technical Architecture
+description: Understanding Crocante's technical architecture, design patterns, and implementation details
+---
+
+# Technical Architecture
+
+Crocante is built with a modern, scalable architecture using Next.js 16, TypeScript, and React 19. This guide provides a comprehensive overview of the technical design, architectural patterns, and implementation details.
+
+## High-Level Architecture
+
+Crocante follows a **Backend-for-Frontend (BFF)** architecture pattern with clear separation of concerns:
+
+```plaintext
+┌─────────────┐
+│   Browser   │
+│  (Client)   │
+└──────┬──────┘
+       │ HTTP (cookies)
+       ▼
+┌─────────────────────────────────┐
+│   Next.js Application (BFF)     │
+│  ┌──────────────────────────┐   │
+│  │  Client Components       │   │  Port: 3000
+│  │  (React 19)              │   │
+│  └────────┬─────────────────┘   │
+│           │                      │
+│  ┌────────▼─────────────────┐   │
+│  │  API Routes              │   │
+│  │  (Proxy + Auth)          │   │
+│  └────────┬─────────────────┘   │
+│           │                      │
+└───────────┼──────────────────────┘
+            │ HTTP + Bearer Token
+            ▼
+┌─────────────────────────────────┐
+│   Backend API Gateway           │
+│   (External Service)            │
+└─────────────────────────────────┘
+```
+
+### Key Architectural Decisions
+
+<CardGroup cols={2}>
+  <Card title="BFF Pattern" icon="server">
+    All external API calls are proxied through Next.js API routes, keeping tokens server-side and providing a security layer
+  </Card>
+  
+  <Card title="Domain-Driven Design" icon="folder-tree">
+    Code is organized by business domain (portfolio, staking, credit) rather than technical layers
+  </Card>
+  
+  <Card title="React Query" icon="refresh">
+    Declarative data fetching with automatic caching, background refetching, and optimistic updates
+  </Card>
+  
+  <Card title="Type Safety" icon="shield-check">
+    End-to-end TypeScript with Zod schema validation for runtime type checking
+  </Card>
+</CardGroup>
+
+## Project Structure
+
+Crocante follows a domain-driven directory structure:
+
+```plaintext
+/workspace/source/
+├── app/                          # Next.js App Router
+│   ├── (dashboard)/              # Dashboard route group
+│   │   ├── portfolio/page.tsx    # Portfolio route
+│   │   ├── staking/page.tsx      # Staking route
+│   │   ├── credit/page.tsx       # Credit route
+│   │   ├── activity/page.tsx     # Activity route
+│   │   ├── layout.tsx            # Dashboard layout with Shell
+│   │   └── loading.tsx           # Loading UI
+│   ├── api/                      # BFF API routes
+│   │   ├── auth/                 # Authentication endpoints
+│   │   │   ├── login/route.ts    # POST /api/auth/login
+│   │   │   ├── logout/route.ts   # POST /api/auth/logout
+│   │   │   ├── renew/route.ts    # POST /api/auth/renew
+│   │   │   └── session/route.ts  # GET /api/auth/session
+│   │   └── proxy/[...path]/      # Proxy to backend API
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Root page (redirects)
+├── components/                   # Shared UI components
+│   ├── core/                     # Core component library
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   ├── modal.tsx
+│   │   ├── table.tsx
+│   │   └── ...
+│   ├── auth/                     # Authentication components
+│   │   ├── auth-modal.tsx
+│   │   ├── login-modal.tsx
+│   │   └── register/
+│   │       ├── register-modal.tsx
+│   │       └── steps/            # Registration steps
+│   ├── layout/                   # Layout components
+│   │   ├── shell.tsx             # Main app shell
+│   │   ├── nav-bar.tsx           # Sidebar navigation
+│   │   └── header.tsx            # Top header
+│   └── index.ts                  # Component exports
+├── domain/                       # Business domains
+│   ├── portfolio/
+│   │   ├── portfolio.tsx         # Main portfolio component
+│   │   ├── portfolio-section.tsx # Page wrapper
+│   │   ├── components/           # Portfolio-specific components
+│   │   │   ├── header.tsx
+│   │   │   ├── asset-breakdown.tsx
+│   │   │   ├── asset-allocation.tsx
+│   │   │   ├── tabs-section.tsx
+│   │   │   └── header-actions/   # Action modals
+│   │   └── hooks/                # Portfolio business logic
+│   │       └── use-portfolio-data.tsx
+│   ├── staking/
+│   │   ├── components/
+│   │   └── hooks/
+│   ├── credit/
+│   │   ├── components/
+│   │   └── hooks/
+│   └── activity/
+│       ├── components/
+│       └── hooks/
+├── services/                     # Shared services layer
+│   ├── api/                      # API client
+│   │   ├── http-service.ts       # Axios wrapper
+│   │   ├── utils.ts              # Axios instances
+│   │   ├── auth/                 # Auth services
+│   │   │   ├── login-service.ts
+│   │   │   └── schemas.ts
+│   │   └── errors/               # Error handling
+│   ├── hooks/                    # Shared React Query hooks
+│   │   ├── use-user.ts           # User data hook
+│   │   ├── use-portfolio.ts      # Portfolio data hook
+│   │   ├── use-activity.ts       # Activity data hook
+│   │   ├── mutations/            # Mutation hooks
+│   │   └── types/                # Response types
+│   ├── react-query/              # Query client config
+│   │   └── query-client.ts
+│   └── zod/                      # Schema validation
+│       └── utils.ts
+├── context/                      # React Context providers
+│   ├── providers-wrapper.tsx     # Root provider wrapper
+│   ├── session-provider.tsx      # Session management
+│   ├── toast-provider.tsx        # Toast notifications
+│   ├── custom-header-context.tsx # Custom header state
+│   └── auth-expired-listener.tsx # Auth expiry handling
+├── hooks/                        # Shared custom hooks
+│   ├── use-modal.ts              # Modal state management
+│   ├── use-is-mobile.ts          # Responsive detection
+│   ├── use-mounted.ts            # Client-side mount detection
+│   └── use-session-mode.ts       # Session mode state
+├── lib/                          # Utility libraries
+│   ├── utils.ts                  # General utilities
+│   ├── network.ts                # Network utilities
+│   └── auth/                     # Auth utilities
+│       └── cookies.ts            # Cookie management
+├── config/                       # Configuration
+│   ├── constants.ts              # App constants
+│   ├── envParsed.ts              # Environment variables
+│   └── localStorage.ts           # LocalStorage manager
+└── package.json
+```
+
+## Core Technologies
+
+### Frontend Stack
+
+```json
+// package.json dependencies
+{
+  "next": "^16.1.6",                    // React framework with App Router
+  "react": "19.2.0",                    // UI library
+  "react-dom": "19.2.0",
+  "typescript": "^5",                   // Type safety
+  "@tanstack/react-query": "^5.89.0",  // Data fetching & caching
+  "axios": "^1.13.2",                   // HTTP client
+  "zod": "3.25.76",                     // Schema validation
+  "react-hook-form": "^7.60.0",         // Form management
+  "@hookform/resolvers": "^3.10.0",    // Form validation integration
+  "tailwindcss": "^4.1.9",              // Utility-first CSS
+  "@radix-ui/*": "...",                 // Accessible UI primitives
+  "lucide-react": "^0.454.0",           // Icon library
+  "viem": "^2.38.3",                    // Ethereum utilities
+  "recharts": "2.15.4"                  // Charting library
+}
+```
+
+### Next.js Configuration
+
+```typescript
+// next.config.ts (simplified)
+export default {
+  reactStrictMode: true,
+  // App Router enabled by default
+  experimental: {
+    typedRoutes: true,  // Type-safe routing
+  },
+};
+```
+
+## Authentication & Session Management
+
+### BFF Authentication Flow
+
+Crocante implements secure authentication using the BFF pattern:
+
+<Steps>
+  <Step title="Client Login Request">
+    User submits credentials through the login form
+    
+    ```typescript
+    // Login service: services/api/auth/login-service.ts:16
+    async login(payload: LoginRequest): Promise<{ success: true }> {
+      await authApi.post("/api/auth/login", payload);
+      LocalStorageManager.setItem(LocalStorageKeys.SESSION_MODE, "real");
+      window.dispatchEvent(new CustomEvent("session-mode-changed"));
+      return { success: true };
+    }
+    ```
+  </Step>
+
+  <Step title="BFF Authenticates with Backend">
+    Next.js API route validates credentials and calls backend
+    
+    ```typescript
+    // BFF login route: app/api/auth/login/route.ts:12
+    export async function POST(req: NextRequest) {
+      // 1. Validate request body with Zod
+      const parsed = LoginRequestSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+      }
+
+      // 2. Call backend API
+      const loginUrl = getBackendAuthUrl(env.API_GATEWAY, env.EP_AUTH_LOGIN);
+      const res = await fetch(loginUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+
+      // 3. Extract token from backend response
+      const data = await res.json();
+      const token = data?.data?.token ?? data?.access_token;
+
+      // 4. Set HttpOnly cookie
+      const response = NextResponse.json({ success: true });
+      setSessionCookie(response, token);  // Cookie: session=<token>; HttpOnly; Secure
+      return response;
+    }
+    ```
+  </Step>
+
+  <Step title="Session Cookie Stored">
+    BFF sets HttpOnly cookie that's automatically included in subsequent requests
+    
+    ```typescript
+    // Cookie utility: lib/auth/cookies.ts
+    export function setSessionCookie(response: NextResponse, token: string) {
+      response.cookies.set('session', token, {
+        httpOnly: true,      // Not accessible via JavaScript
+        secure: true,        // HTTPS only
+        sameSite: 'strict',  // CSRF protection
+        maxAge: 60 * 60 * 24 // 24 hours
+      });
+    }
+    ```
+  </Step>
+
+  <Step title="API Proxy Injects Token">
+    All API calls go through BFF proxy which injects Bearer token
+    
+    ```typescript
+    // Proxy route: app/proxy/[...path]/route.ts (conceptual)
+    export async function GET(req: NextRequest) {
+      const sessionCookie = req.cookies.get('session');
+      const token = sessionCookie?.value;
+      
+      // Proxy to backend with Bearer token
+      const backendResponse = await fetch(backendUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      return NextResponse.json(await backendResponse.json());
+    }
+    ```
+  </Step>
+</Steps>
+
+### Session Provider
+
+The session is managed by React Context:
+
+```typescript
+// Session context: context/session-provider.tsx:18
+type SessionContextType = {
+  isSignedIn: boolean;
+  user: User | null;
+  isLoading: boolean;
+  logout: () => void;
+  setToken: (token: string) => void;
+};
+
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  // Poll user data every 5 minutes
+  const { data: user, isLoading, isError } = useUser(
+    POLL_USER_DATA_INTERVAL  // 5 minutes
+  );
+
+  const isSignedIn = !!user && !isError;
+
+  const logout = useCallback(async () => {
+    await LoginService.logout();
+    queryClient.removeQueries({ queryKey: ["user", "me"] });
+  }, []);
+
+  // Listen for auth-expired events
+  useEffect(() => {
+    const handler = () => {
+      LocalStorageManager.clearLocalStorage();
+      queryClient.removeQueries({ queryKey: ["user", "me"] });
+    };
+    window.addEventListener("auth-expired", handler);
+    return () => window.removeEventListener("auth-expired", handler);
+  }, []);
+
+  return (
+    <SessionContext.Provider value={{ isSignedIn, user, isLoading, logout, setToken }}>
+      <SessionExpiryManager />
+      {children}
+    </SessionContext.Provider>
+  );
+}
+```
+
+## Data Fetching Architecture
+
+### React Query Setup
+
+Crocante uses TanStack React Query for all server state management:
+
+```typescript
+// Query client: services/react-query/query-client.ts
+import { QueryClient } from '@tanstack/react-query';
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,        // 5 minutes - data fresh for 5min
+      gcTime: 1000 * 60 * 10,          // 10 minutes - cache retention
+      refetchOnWindowFocus: true,      // Refetch on tab focus
+      refetchOnReconnect: true,        // Refetch on network reconnect
+      retry: 3,                        // Retry failed requests 3 times
+    },
+  },
+});
+```
+
+### Data Fetching Hooks
+
+Each domain has dedicated hooks for data fetching:
+
+```typescript
+// Portfolio data hook: services/hooks/use-portfolio.ts:10
+export function usePortfolio(userId: string, pollInterval: number) {
+  const { data: netWorthData } = useNetWorth(userId, pollInterval);
+  const { sessionMode } = useSessionMode();
+  
+  return useQuery<PortfolioDataResponse>({
+    queryKey: ["portfolioData", userId],
+    queryFn: async () => {
+      if (sessionMode === "mock" || !netWorthData) {
+        return getMockedPortfolioData();  // Return mock data
+      }
+      return getFormattedPortfolioData(netWorthData);  // Transform real data
+    },
+    enabled: !!netWorthData,
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: pollInterval,     // Poll every 15 seconds
+    refetchIntervalInBackground: true,  // Continue polling in background
+  });
+}
+```
+
+```typescript
+// User data hook: services/hooks/use-user.ts:17
+export function useUser(
+  pollIntervalMs: number,
+  fallbackToMockOnNonAuthError = true
+) {
+  const { EP_CLIENT } = envParsed();
+  const { sessionMode } = useSessionMode();
+  
+  return useQuery<User | null>({
+    queryKey: ["user", "me", sessionMode],
+    queryFn: async () => {
+      // 1. Explicit mock mode
+      if (currentSessionMode === "mock") {
+        return getMockedDefaultUserData();
+      }
+
+      // 2. No session mode: throw 401
+      if (currentSessionMode === "none") {
+        throw new ServiceError({
+          message: "Not authenticated",
+          code: "NOT_AUTHENTICATED",
+          status: 401,
+        });
+      }
+
+      // 3. Real mode: fetch from backend
+      try {
+        const clientResponse = await getValidated<ClientResponse>(
+          `${EP_CLIENT}`,
+          clientResponseSchema
+        );
+        return getFormattedClientResponse(clientResponse);
+      } catch (err) {
+        // Auth errors: bubble up for global handler
+        if (err instanceof ServiceError && (err.status === 401 || err.status === 403)) {
+          throw err;
+        }
+        // Non-auth errors: optionally fallback to mock
+        if (fallbackToMockOnNonAuthError) {
+          return getMockedDefaultUserData();
+        }
+        throw err;
+      }
+    },
+    meta: { authSensitive: true },      // Mark for auth error handling
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: pollIntervalMs,    // Poll every 5 minutes
+    refetchIntervalInBackground: true,
+    refetchOnMount: "always",
+  });
+}
+```
+
+### Polling Intervals
+
+Different data types have different polling intervals:
+
+```typescript
+// Polling configuration: config/constants.ts
+export const POLL_USER_DATA_INTERVAL = 1000 * 60 * 5;           // 5 minutes
+export const POLL_PORTFOLIO_DATA_INTERVAL = (1000 * 60 * 1) / 4; // 15 seconds
+export const POLL_ACTIVITY_DATA_INTERVAL = 1000 * 60 * 5;       // 5 minutes
+export const POLL_STAKING_DATA_INTERVAL = 1000 * 60 * 5;        // 5 minutes
+export const POLL_QUOTE_INTERVAL = 1000 * 5;                    // 5 seconds
+export const POLL_TOKEN_CONVERSION_INTERVAL = 1000 * 5;         // 5 seconds
+```
+
+## Domain-Driven Design
+
+Each business domain is self-contained with its own components, hooks, and logic:
+
+### Portfolio Domain Example
+
+```plaintext
+domain/portfolio/
+├── portfolio-section.tsx          # Page-level wrapper
+├── portfolio.tsx                  # Main component
+├── components/                    # Portfolio-specific components
+│   ├── header.tsx                 # Portfolio header
+│   ├── left-section/
+│   │   ├── asset-breakdown.tsx    # Asset totals
+│   │   ├── currency-table.tsx     # Fiat currencies
+│   │   └── tokens-table.tsx       # Cryptocurrencies
+│   ├── right-section/
+│   │   └── asset-allocation.tsx   # Pie chart
+│   ├── bottom-section/
+│   │   ├── tabs-section.tsx       # Custodian tabs
+│   │   ├── banks-table.tsx
+│   │   ├── custodians-table.tsx
+│   │   ├── exchanges-table.tsx
+│   │   ├── internal-wallets-table.tsx
+│   │   └── otc-desks-table.tsx
+│   └── header-actions/            # Action modals
+│       ├── deposit-modal.tsx
+│       ├── send-modal.tsx
+│       ├── swap-modal.tsx
+│       └── stake-modal.tsx
+└── hooks/
+    └── use-portfolio-data.tsx     # Portfolio business logic
+```
+
+```typescript
+// Portfolio main component: domain/portfolio/portfolio.tsx:8
+import {
+  AssetAllocation,
+  AssetBreakdown,
+  Header,
+  TabsSection,
+} from "@/domain/portfolio/components";
+
+export default function Portfolio() {
+  return (
+    <div className="space-y-8">
+      {/* Consolidated View */}
+      <div className="bg-card rounded-lg p-6">
+        <Header />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Section - Asset breakdown */}
+          <AssetBreakdown />
+
+          {/* Right Section – Asset Allocation Pie Chart */}
+          <AssetAllocation />
+        </div>
+      </div>
+
+      {/* Tabs and Table */}
+      <TabsSection />
+    </div>
+  );
+}
+```
+
+### Domain Hook Pattern
+
+```typescript
+// Portfolio data hook: domain/portfolio/hooks/use-portfolio-data.tsx:26
+export function usePortfolioData() {
+  const { user } = useSession();
+  const userId = user?.id.toString() || "";
+
+  // Fetch portfolio data with polling
+  const { data: portfolioData, isLoading } = usePortfolio(
+    userId,
+    POLL_PORTFOLIO_DATA_INTERVAL
+  );
+
+  // Derive tokens for dropdowns
+  const { tokens, tokensOptions } = useMemo(() => {
+    if (!portfolioData?.cryptocurrenciesData) {
+      return { tokens: undefined, tokensOptions: [] };
+    }
+
+    const tokensRecord: Record<string, TokenType> = {};
+    const options: Array<SelectOption> = [];
+
+    portfolioData.cryptocurrenciesData.forEach((currency) => {
+      const token: TokenType = {
+        symbol: currency.code,
+        icon: <img src={getTokenLogo(currency.code)} />,
+      };
+      tokensRecord[currency.code] = token;
+      options.push({
+        label: currency.code,
+        id: currency.code,
+        value: currency.available,
+        icon: token.icon,
+      });
+    });
+
+    return { tokens: tokensRecord, tokensOptions: options };
+  }, [portfolioData?.cryptocurrenciesData]);
+
+  // Return formatted data for components
+  return {
+    isLoading,
+    totalBalance: formatCurrency(portfolioData?.totalBalance),
+    cryptocurrencies: formatCurrency(portfolioData?.cryptocurrencies),
+    currencies: formatCurrency(portfolioData?.currencies),
+    banksData: portfolioData?.banksData,
+    custodiansData: portfolioData?.custodiansData,
+    tokens,
+    tokensOptions,
+    // ... more derived data
+  };
+}
+```
+
+## Layout & Shell Architecture
+
+### App Shell Component
+
+The app uses a consistent shell layout:
+
+```typescript
+// Shell component: components/layout/shell.tsx:12
+export default function Shell({
+  children,
+  activeMenu,
+  sidebarOpen,
+  setSidebarOpen,
+  customAdditionalHeader,
+}: ShellProps) {
+  const getPageTitle = () => {
+    const item = MENU_ITEMS.find((m) => m.id === activeMenu);
+    return item?.label || "Dashboard";
+  };
+
+  return (
+    <div className="flex h-screen bg-neutral-50">
+      {/* Sidebar Navigation */}
+      <NavBar
+        activeMenu={activeMenu}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header */}
+        <Header
+          title={getPageTitle()}
+          customAdditionalHeader={customAdditionalHeader}
+        />
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-auto bg-white">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Dashboard Layout
+
+```typescript
+// Dashboard layout: app/(dashboard)/layout.tsx:10
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [customAdditionalHeader, setCustomAdditionalHeader] = useState(<></>);
+  const { isOpen: sidebarOpen, setIsOpen: setSidebarOpen } = useModal(true);
+  const isMobile = useIsMobile();
+
+  // Close sidebar on mobile
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [isMobile]);
+
+  // Extract active menu from path
+  const activeMenu = pathname?.split("/").filter(Boolean)[0] || "portfolio";
+
+  return (
+    <CustomHeaderProvider setCustomAdditionalHeader={setCustomAdditionalHeader}>
+      <Shell
+        activeMenu={activeMenu}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        customAdditionalHeader={customAdditionalHeader}
+      >
+        {children}
+      </Shell>
+    </CustomHeaderProvider>
+  );
+}
+```
+
+## HTTP Service Layer
+
+All HTTP requests go through a centralized service:
+
+```typescript
+// HTTP service: services/api/http-service.ts:4
+import { api } from "./utils";
+
+export const HttpService = {
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const res = await api.get<T>(url, config);
+    return res.data;
+  },
+  
+  async post<T>(url: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const res = await api.post<T>(url, body, config);
+    return res.data;
+  },
+  
+  async put<T>(url: string, body?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const res = await api.put<T>(url, body, config);
+    return res.data;
+  },
+  
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const res = await api.delete<T>(url, config);
+    return res.data;
+  },
+};
+```
+
+### Axios Configuration
+
+```typescript
+// Axios instances: services/api/utils.ts:8
+export const api = axios.create({
+  baseURL: "/proxy",           // All requests go through BFF proxy
+  withCredentials: true,       // Include HttpOnly cookies
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  },
+});
+
+// Error interceptor
+api.interceptors.response.use(
+  (res) => res,
+  (err) => Promise.reject(ServiceError.fromAxiosError(err))
+);
+
+// Separate instance for auth routes (no /proxy prefix)
+export const authApi = axios.create({
+  baseURL: "",                 // Direct to BFF auth routes
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  },
+});
+```
+
+## Type Safety with Zod
+
+Runtime validation ensures type safety:
+
+```typescript
+// Zod validation utility: services/zod/utils.ts
+import { z } from 'zod';
+import { HttpService } from '../api/http-service';
+
+export async function getValidated<T>(
+  url: string,
+  schema: z.ZodSchema<T>
+): Promise<T> {
+  const data = await HttpService.get(url);
+  return schema.parse(data);  // Validates and throws if invalid
+}
+```
+
+```typescript
+// Login schema: services/api/auth/schemas.ts
+import { z } from 'zod';
+
+export const LoginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+```
+
+## Context Providers
+
+Global state is managed through React Context:
+
+```typescript
+// Root providers: context/providers-wrapper.tsx:13
+function ProvidersInner({ children }: { children: React.ReactNode }) {
+  const mounted = useMounted();
+  const { isOpen: isOpenAuthModal, open: openAuthModalAction, close: closeAuthModal } = useModal(false);
+
+  return (
+    <>
+      <AuthExpiredListener onOpen={openAuthModalAction} isOpen={isOpenAuthModal} />
+      <SessionProvider>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </SessionProvider>
+      {mounted && (
+        <AuthModal
+          isOpenAuthModal={isOpenAuthModal}
+          onCloseAuthModal={closeAuthModal}
+          onOpenAuthModal={openAuthModalAction}
+        />
+      )}
+    </>
+  );
+}
+
+export default function ProvidersWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ProvidersInner>{children}</ProvidersInner>
+    </QueryClientProvider>
+  );
+}
+```
+
+## Mock Mode Implementation
+
+Crocante includes a full-featured mock mode for development:
+
+```typescript
+// Session mode management: hooks/use-session-mode.ts
+export function useSessionMode() {
+  const [sessionMode, setSessionMode] = useState<SessionMode>(
+    LocalStorageManager.getItem(LocalStorageKeys.SESSION_MODE) ?? "none"
+  );
+
+  useEffect(() => {
+    const handler = () => {
+      const mode = LocalStorageManager.getItem(LocalStorageKeys.SESSION_MODE) ?? "none";
+      setSessionMode(mode);
+    };
+    window.addEventListener("session-mode-changed", handler);
+    return () => window.removeEventListener("session-mode-changed", handler);
+  }, []);
+
+  return { sessionMode };
+}
+```
+
+Mock mode features:
+- **Full UI Access**: All pages and features available
+- **Simulated Data**: Realistic portfolio, staking, and activity data
+- **No Backend Required**: Completely client-side simulation
+- **Additional Features**: Custody, Invest, Governance, Reports (not in real mode)
+
+## Error Handling
+
+### Service Error Class
+
+```typescript
+// Custom error class: services/api/errors/service-error.ts
+export default class ServiceError extends Error {
+  status: number;
+  code: string;
+  details?: unknown;
+
+  static fromAxiosError(err: AxiosError): ServiceError {
+    return new ServiceError({
+      message: err.response?.data?.message || err.message,
+      code: err.response?.data?.code || "UNKNOWN_ERROR",
+      status: err.response?.status || 500,
+      details: err.response?.data,
+    });
+  }
+}
+```
+
+### Auth Error Handling
+
+```typescript
+// Auth expiry listener: context/auth-expired-listener.tsx
+export function AuthExpiredListener({ onOpen, isOpen }: Props) {
+  useEffect(() => {
+    const handler = () => {
+      if (!isOpen) onOpen();  // Show auth modal
+    };
+    window.addEventListener("auth-expired", handler);
+    return () => window.removeEventListener("auth-expired", handler);
+  }, [onOpen, isOpen]);
+
+  return null;
+}
+```
+
+## Performance Optimizations
+
+### React Query Caching
+
+- **Stale Time**: 5 minutes - data is considered fresh
+- **GC Time**: 10 minutes - unused data kept in cache
+- **Background Refetching**: Continues polling even when tab is inactive
+- **Optimistic Updates**: UI updates immediately, revalidates in background
+
+### Code Splitting
+
+Next.js automatically code-splits by route:
+- Each page bundle is loaded on-demand
+- Shared components are automatically extracted
+- Dynamic imports for heavy components
+
+### Image Optimization
+
+Next.js `<Image>` component provides:
+- Automatic lazy loading
+- Responsive images
+- WebP conversion
+- Blur placeholder support
+
+## Security Considerations
+
+<CardGroup cols={2}>
+  <Card title="HttpOnly Cookies" icon="shield">
+    Session tokens stored in HttpOnly cookies, inaccessible to JavaScript
+  </Card>
+  
+  <Card title="BFF Proxy" icon="server">
+    All API calls proxied through Next.js, tokens never exposed to client
+  </Card>
+  
+  <Card title="CSRF Protection" icon="shield-check">
+    SameSite cookie attribute prevents cross-site request forgery
+  </Card>
+  
+  <Card title="Input Validation" icon="check-circle">
+    Zod schema validation on all API inputs for type safety and security
+  </Card>
+</CardGroup>
+
+## Deployment Architecture
+
+```plaintext
+┌─────────────────────────────────────┐
+│   CDN (Vercel Edge Network)         │
+│   - Static assets                   │
+│   - Image optimization              │
+└────────────┬────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────┐
+│   Next.js App (Vercel Serverless)   │
+│   - Server Components               │
+│   - API Routes (BFF)                │
+│   - Session management              │
+└────────────┬────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────┐
+│   Backend API Gateway               │
+│   - Authentication                  │
+│   - Business logic                  │
+│   - Database access                 │
+└─────────────────────────────────────┘
+```
+
+## Testing Strategy
+
+### Mock Mode Testing
+- Use mock mode for UI/UX testing
+- All features testable without backend
+- Realistic data scenarios
+
+### Type Safety
+- TypeScript catches errors at compile time
+- Zod validates runtime data
+- End-to-end type safety from API to UI
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication API" icon="lock" href="/api/auth/login">
+    Explore authentication endpoints and session management
+  </Card>
+  
+  <Card title="Component Library" icon="cube" href="/components/overview">
+    Browse reusable UI components and their usage
+  </Card>
+  
+  <Card title="User Guides" icon="book" href="/guides/authentication">
+    Learn how to use the platform features
+  </Card>
+  
+  <Card title="Portfolio API" icon="wallet" href="/api/portfolio/net-worth">
+    Access portfolio data and asset information
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Tip>
+  **Domain Isolation**: Keep domain logic isolated within domain folders. Shared logic goes in `services/` or `hooks/`.
+</Tip>
+
+<Tip>
+  **Type Safety**: Always use Zod schemas for API responses. This provides runtime validation and prevents type drift.
+</Tip>
+
+<Tip>
+  **React Query Keys**: Use consistent query key patterns: `["resource", id, filters]` for proper cache invalidation.
+</Tip>
+
+<Warning>
+  **Security**: Never expose session tokens or API keys to the client. All sensitive operations must go through the BFF.
+</Warning>

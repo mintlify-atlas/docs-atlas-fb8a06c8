@@ -1,0 +1,226 @@
+---
+title: Staking
+description: Earn yield on your digital assets through flexible and fixed-term staking programs
+icon: coins
+---
+
+## Overview
+
+The Staking feature allows you to earn passive income on your cryptocurrency holdings by participating in various staking programs. Choose between flexible (no lockup) or fixed-term staking options with competitive APY rates. The platform handles all technical complexities while you earn rewards.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Flexible Staking" icon="infinity">
+    Earn daily yields without lockup periods - withdraw anytime
+  </Card>
+  <Card title="Fixed-Term Programs" icon="calendar">
+    Lock assets for higher APY rates with predictable returns
+  </Card>
+  <Card title="Real-Time Calculations" icon="calculator">
+    See projected yields, total accumulated amounts, and end dates before staking
+  </Card>
+  <Card title="Stake History" icon="clock-rotate-left">
+    Track all your current and past staking positions with complete transaction history
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Staking Types
+
+The `StakeComponent` supports multiple staking models:
+
+<Tabs>
+  <Tab title="Flexible">
+    - **No lockup period**: Withdraw anytime
+    - **Daily yield**: Earn rewards calculated daily
+    - **Variable APY**: Rates may adjust based on market conditions
+    - **Lower minimum**: Typically smaller minimum stake amounts
+    - **Ideal for**: Liquidity-conscious users who want easy access to funds
+  </Tab>
+  
+  <Tab title="Fixed-Term">
+    - **Locked duration**: Assets locked for specific period (30, 60, 90 days, etc.)
+    - **Higher APY**: Better rates in exchange for commitment
+    - **Predictable returns**: Know exact yield at maturity
+    - **Fixed rates**: APY locked at time of staking
+    - **Ideal for**: Long-term holders maximizing returns
+  </Tab>
+</Tabs>
+
+### Staking Interface
+
+The main staking interface (`StakeComponent`) provides:
+
+1. **Asset Selection**: Choose which cryptocurrency to stake from your available balance
+2. **Quantity Input**: 
+   - Enter amount to stake in native token or USD equivalent
+   - Real-time USD conversion using `useTokenConversion` hook
+   - Min/Max buttons for quick selection
+   - Input validation via `useValueVerifier`
+
+3. **Staking Type Tabs**: Switch between available programs (Flexible, 30-Day, 60-Day, etc.)
+
+4. **Yield Calculator**: Displays:
+   - **APY**: Annual Percentage Yield
+   - **Duration**: Lock period (or "Flexible")
+   - **Total Yield**: Expected earnings for fixed-term
+   - **Daily Yield**: Per-day earnings for flexible
+   - **Total Accumulated**: Final amount including principal + interest
+   - **Start Date**: When staking begins
+   - **End Date**: Maturity date (if applicable)
+
+### Stake History Table
+
+The `StakeHistoryTable` component shows:
+
+- All active staking positions
+- Historical completed stakes
+- Filterable by:
+  - Staking type (Flexible vs Fixed)
+  - Asset type
+  - Date range
+  - Status (Active, Completed, Cancelled)
+
+<Info>
+The history table uses the `useStakeHistoryData` hook with `useStakeHistoryFilters` for powerful filtering capabilities.
+</Info>
+
+## How to Stake Assets
+
+<Steps>
+  <Step title="Navigate to Staking">
+    Go to the Staking page from the main navigation menu. You'll see the staking interface and your stake history below.
+  </Step>
+  
+  <Step title="Select Asset">
+    Click the "Asset" dropdown and choose the cryptocurrency you want to stake. Only assets you hold with sufficient balance will be available.
+  </Step>
+  
+  <Step title="Choose Staking Type">
+    Review the available staking programs in the tabs:
+    - Check APY rates for each option
+    - Compare flexible vs fixed-term yields
+    - Consider your liquidity needs
+  </Step>
+  
+  <Step title="Enter Quantity">
+    Input the amount to stake:
+    - Type directly in the native token field
+    - Or enter USD equivalent amount
+    - Use "MIN" for minimum stake amount
+    - Use "MAX" to stake entire available balance
+  </Step>
+  
+  <Step title="Review Yield Details">
+    The yield calculator updates automatically showing:
+    - Expected total yield
+    - Accumulated amount at maturity
+    - Start and end dates
+    - Daily earnings (for flexible staking)
+  </Step>
+  
+  <Step title="Confirm Stake">
+    Click the "Stake" button. The system will:
+    - Validate your inputs using `useValueVerifier`
+    - Check available balance
+    - Submit the staking transaction via `usePostStaking` mutation
+    - Show success/error toast notification
+    - Update your stake history
+  </Step>
+</Steps>
+
+## Staking Workflow
+
+The staking process follows this technical flow:
+
+```tsx
+// From stake.tsx
+const handleStake = (userId: string, typeId: string) => {
+  const amount = value?.trim();
+  
+  postStaking.mutate(
+    { userId, typeId, amount },
+    {
+      onSuccess: () => showToast("Stake successful", ToastType.SUCCESS),
+      onError: () => showToast("Stake failed", ToastType.ERROR),
+      onSettled: () => resetAssetSelector()
+    }
+  );
+};
+```
+
+<Warning>
+Staking transactions cannot be reversed once confirmed. For fixed-term stakes, your assets will be locked until the end date. Early withdrawal is not possible.
+</Warning>
+
+## Data Components
+
+Key hooks used by the staking feature:
+
+- **useStakeData**: Fetches available staking programs and user's eligible tokens
+- **useStakeDataUI**: Formats staking data for display (APY, dates, yields)
+- **useTokenConversion**: Handles real-time USD ↔ token conversions
+- **useValueVerifier**: Validates input amounts against min/max constraints
+- **usePostStaking**: Mutation hook for submitting stake transactions
+- **useStakeHistoryData**: Retrieves user's staking history
+- **useStakeHistoryFilters**: Manages filter state for history table
+
+## Yield Calculation Examples
+
+### Flexible Staking
+
+- **Stake**: 1,000 USDC
+- **APY**: 5.2%
+- **Daily Yield**: 0.142 USDC (1,000 × 5.2% ÷ 365)
+- **Next Day Total**: 1,000.142 USDC
+- **Withdrawal**: Anytime
+
+### Fixed-Term Staking (90 Days)
+
+- **Stake**: 1 ETH
+- **APY**: 8.5%
+- **Duration**: 90 days
+- **Total Yield**: 0.021 ETH (1 × 8.5% × 90/365)
+- **Total Accumulated**: 1.021 ETH
+- **End Date**: 90 days from start
+
+## Session Modes
+
+<Note>
+Staking is disabled in mock/demo mode for safety. The "Stake" button will be disabled when `sessionMode === "mock"` to prevent accidental test transactions.
+</Note>
+
+## Best Practices
+
+<Tip>
+Diversify your staking strategy by splitting funds between flexible and fixed-term programs. This balances liquidity needs with yield optimization.
+</Tip>
+
+<Tip>
+Monitor APY rates regularly as they may change based on network conditions and demand. Fixed-term stakes lock in the rate at time of commitment.
+</Tip>
+
+<Info>
+Always ensure you maintain some unstaked balance for transaction fees and operational liquidity.
+</Info>
+
+## Troubleshooting
+
+**Stake button is disabled:**
+- Verify you have sufficient balance above the minimum stake amount
+- Check that you're not in mock/demo mode
+- Ensure a staking type is selected
+- Confirm the entered amount is valid (non-zero, within min/max bounds)
+
+**USD conversion not updating:**
+- The `useTokenConversion` hook fetches live rates - wait a moment for data to load
+- Ensure you've selected a valid asset
+- Check your network connection
+
+## Related Features
+
+- [Portfolio](/features/portfolio) - View total staked amounts in portfolio
+- [Activity](/features/activity) - Track staking deposits and withdrawals
+- [Credit](/features/credit) - Borrow against staked assets without unstaking

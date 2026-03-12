@@ -1,0 +1,249 @@
+---
+title: 'Get Session'
+api: 'GET /api/auth/session'
+description: 'Retrieve current session status and expiration time'
+---
+
+## Overview
+
+Returns the current authentication session status, including whether a valid session exists and when it will expire. This endpoint is used by the client to check session validity and display session expiration warnings.
+
+The endpoint reads the encrypted session cookie and returns metadata about the session without exposing the access token to the client.
+
+## Request
+
+No request parameters are required. The endpoint reads the session cookie from the request headers.
+
+### Headers
+
+Include the session cookie set during login:
+
+```
+Cookie: crocante_session=<encrypted_session_value>
+```
+
+### Request Example
+
+```bash
+curl -X GET https://api.crocante.com/api/auth/session \
+  -H "Accept: application/json" \
+  -b cookies.txt
+```
+
+## Response
+
+### Success Response (200)
+
+The endpoint always returns 200 OK with session status information.
+
+<ResponseField name="hasSession" type="boolean">
+  Indicates whether a valid session exists. `true` if a valid session cookie with a decryptable token is present, `false` otherwise
+</ResponseField>
+
+<ResponseField name="expiresAt" type="number" optional>
+  Session expiration timestamp in milliseconds since Unix epoch (UTC). Only present when `hasSession` is `true`
+</ResponseField>
+
+### Active Session Example
+
+```json
+{
+  "hasSession": true,
+  "expiresAt": 1710252000000
+}
+```
+
+### No Session Example
+
+```json
+{
+  "hasSession": false
+}
+```
+
+## Session Expiration Calculation
+
+The `expiresAt` timestamp is calculated using:
+
+```
+expiresAt = sessionIssuedAt + sessionMaxAge
+```
+
+Where:
+- `sessionIssuedAt`: Timestamp when the session cookie was created (stored in encrypted cookie payload)
+- `sessionMaxAge`: 300 seconds (5 minutes)
+
+### Example Calculation
+
+```
+Session issued at: 2026-03-12T10:00:00.000Z (1710237600000 ms)
+Max age: 300 seconds (300000 ms)
+Expires at: 2026-03-12T10:05:00.000Z (1710237900000 ms)
+```
+
+## Use Cases
+
+### Session Expiry Modal
+
+Display a warning modal when the session is about to expire:
+
+```typescript
+const checkSession = async () => {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include'
+  });
+  const { hasSession, expiresAt } = await response.json();
+  
+  if (hasSession && expiresAt) {
+    const timeRemaining = expiresAt - Date.now();
+    const minutesRemaining = Math.floor(timeRemaining / 60000);
+    
+    if (minutesRemaining <= 1) {
+      showExpiryWarning(minutesRemaining);
+    }
+  } else {
+    redirectToLogin();
+  }
+};
+```
+
+### Auto-Refresh Session
+
+Poll the endpoint to detect session expiration:
+
+```typescript
+setInterval(async () => {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include'
+  });
+  const { hasSession } = await response.json();
+  
+  if (!hasSession) {
+    // Session expired, redirect to login
+    window.location.href = '/login';
+  }
+}, 30000); // Check every 30 seconds
+```
+
+### Protected Route Guard
+
+Verify session before rendering protected content:
+
+```typescript
+const ProtectedRoute = async () => {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include'
+  });
+  const { hasSession } = await response.json();
+  
+  if (!hasSession) {
+    redirect('/login');
+  }
+  
+  return <ProtectedContent />;
+};
+```
+
+## Session Cookie Details
+
+### Cookie Structure
+
+The session cookie contains an encrypted JSON payload:
+
+```typescript
+interface SessionPayload {
+  token: string;      // Backend access token
+  issuedAt: number;   // Timestamp in milliseconds
+}
+```
+
+### Cookie Attributes
+
+- **Name**: `crocante_session`
+- **Max-Age**: 300 seconds (5 minutes)
+- **HttpOnly**: `true` (JavaScript cannot access)
+- **Secure**: `true` in production (HTTPS only)
+- **SameSite**: `Strict` (CSRF protection)
+- **Path**: `/` (available site-wide)
+
+### Encryption
+
+The cookie value is encrypted using AES-256-GCM encryption:
+
+1. Session payload is serialized to JSON
+2. JSON string is encrypted with secret key
+3. Encrypted value is stored in cookie
+4. On read, cookie value is decrypted and parsed
+
+This ensures the access token is never exposed to client-side JavaScript.
+
+## Code Example
+
+```typescript
+// Check current session status
+const getSessionStatus = async () => {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+  
+  const session = await response.json();
+  return session;
+};
+
+// Usage
+const { hasSession, expiresAt } = await getSessionStatus();
+
+if (hasSession) {
+  const expiresIn = Math.floor((expiresAt - Date.now()) / 1000);
+  console.log(`Session expires in ${expiresIn} seconds`);
+} else {
+  console.log('No active session');
+}
+```
+
+```javascript
+// React hook for session monitoring
+import { useEffect, useState } from 'react';
+
+function useSession() {
+  const [session, setSession] = useState({ hasSession: false });
+  
+  useEffect(() => {
+    const checkSession = async () => {
+      const res = await fetch('/api/auth/session', {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      setSession(data);
+    };
+    
+    checkSession();
+    const interval = setInterval(checkSession, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return session;
+}
+```
+
+## Security Considerations
+
+- Access token is never returned to the client
+- Only session metadata (existence and expiry) is exposed
+- Cookie is HTTP-only to prevent XSS attacks
+- Cookie is encrypted to prevent token extraction
+- Endpoint does not require authentication (reads from cookie)
+- No rate limiting needed (read-only, no sensitive data)
+
+## Session Lifetime
+
+Sessions have a fixed lifetime of **5 minutes** from issuance. Key points:
+
+- Sessions do not auto-renew on activity
+- Users must re-authenticate after 5 minutes
+- Session expiry time is calculated from `issuedAt`, not last access
+- For production use, consider implementing session renewal or longer timeouts

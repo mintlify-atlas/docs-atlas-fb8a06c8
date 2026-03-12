@@ -1,0 +1,188 @@
+---
+title: Portfolio Management
+description: Monitor and manage all your digital assets across multiple accounts in a unified dashboard
+icon: wallet
+---
+
+## Overview
+
+The Portfolio feature provides a comprehensive view of all your digital assets across different custody providers, exchanges, and wallets. Track your holdings in real-time, view asset allocation, and perform key operations like deposits, swaps, sends, and staking directly from the consolidated view.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Unified Asset View" icon="chart-pie">
+    See all your cryptocurrencies and fiat assets in one consolidated dashboard with real-time valuations
+  </Card>
+  <Card title="Quick Actions" icon="bolt">
+    Deposit, send, swap, and stake assets without leaving the portfolio view
+  </Card>
+  <Card title="Multi-Source Tracking" icon="building">
+    Monitor holdings across custodians, exchanges, OTC desks, internal wallets, and banks
+  </Card>
+  <Card title="Asset Allocation" icon="chart-line">
+    Visualize portfolio distribution with interactive pie charts and breakdown tables
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Consolidated View
+
+The portfolio dashboard displays your total balance and breaks down assets into:
+
+- **Cryptocurrencies**: All digital assets with real-time prices and 24h changes
+- **Fiat Currencies**: Traditional currency holdings (available in mock mode)
+
+Each category is collapsible and displays:
+- Asset symbol and full name
+- Current balance (quantity)
+- USD equivalent value
+- 24-hour price change percentage
+- Quick action buttons
+
+### Asset Breakdown
+
+The `AssetBreakdown` component organizes your holdings:
+
+- **TokensTable**: Displays all cryptocurrency holdings with sortable columns
+- **CurrencyTable**: Shows fiat currency balances
+- Collapsible sections for better organization
+- Total balance calculation for each category
+
+### Asset Allocation Visualization
+
+The `AssetAllocation` component provides:
+
+- Interactive pie chart showing portfolio distribution
+- Color-coded segments for each asset
+- Percentage breakdowns
+- Quick visual assessment of concentration risk
+
+### Quick Actions
+
+From the portfolio header, you can access:
+
+<Steps>
+  <Step title="Deposit">
+    Generate deposit addresses for any supported cryptocurrency. The `DepositModal` component shows:
+    - QR code for easy mobile deposits
+    - Wallet address with copy functionality
+    - Network selection (Ethereum, Bitcoin, etc.)
+    - Minimum deposit amounts
+    - Network-specific warnings
+  </Step>
+  
+  <Step title="Send">
+    Transfer assets to external wallets or whitelisted addresses via the `SendModal` component:
+    - Select asset and network
+    - Enter recipient address
+    - Specify amount with max/min buttons
+    - Review transaction details before confirming
+  </Step>
+  
+  <Step title="Swap">
+    Exchange one asset for another using the `SwapModal` component:
+    - Select source and destination tokens
+    - Real-time conversion rates
+    - Automatic USD equivalent calculation
+    - Slippage and fee display
+  </Step>
+  
+  <Step title="Stake">
+    Access staking opportunities directly from portfolio via the `StakeModal` component:
+    - Choose from available staking programs
+    - View APY, duration, and yield estimates
+    - Stake with one click
+  </Step>
+</Steps>
+
+### Multi-Source Tracking
+
+The bottom section features tabs for different account types:
+
+<Tabs>
+  <Tab title="Custodians">
+    View assets held with institutional custody providers like Copper, Fireblocks, or BitGo
+  </Tab>
+  
+  <Tab title="Exchanges">
+    Track balances across connected exchanges
+  </Tab>
+  
+  <Tab title="Internal Wallets">
+    Monitor self-custody and MPC wallet holdings
+  </Tab>
+  
+  <Tab title="Banks">
+    See fiat balances in connected bank accounts
+  </Tab>
+  
+  <Tab title="OTC Desks">
+    View assets in OTC trading accounts
+  </Tab>
+</Tabs>
+
+Each tab displays relevant account information, balances, and allows filtering by provider or account type.
+
+## How to Use Portfolio
+
+<Steps>
+  <Step title="View Your Holdings">
+    Navigate to the Portfolio page to see your consolidated asset view. The total balance appears in the header, with detailed breakdowns below.
+  </Step>
+  
+  <Step title="Expand Asset Categories">
+    Click the chevron icons next to "Cryptocurrencies" or "Currencies" to expand or collapse sections. This helps focus on specific asset types.
+  </Step>
+  
+  <Step title="Perform Quick Actions">
+    Use the action buttons in the header or next to individual assets:
+    - Click "Deposit" to generate a receiving address
+    - Click "Send" to transfer assets out
+    - Click "Swap" to exchange between assets
+    - Click "Stake" to earn yield on holdings
+  </Step>
+  
+  <Step title="Review Asset Allocation">
+    Check the pie chart on the right side to understand your portfolio distribution. Identify concentration risks or rebalancing opportunities.
+  </Step>
+  
+  <Step title="Explore Account Sources">
+    Scroll to the tabs section to see which custodians, exchanges, or wallets hold your assets. Filter by provider for detailed views.
+  </Step>
+</Steps>
+
+## Data Components
+
+The portfolio feature uses several custom hooks for data management:
+
+- **usePortfolioData**: Fetches consolidated balance and asset lists
+- **useDepositData**: Manages deposit address generation and network configs  
+- **useSwapData**: Handles token swap rates and validations
+- **useStakeData**: Retrieves available staking programs
+- **useNetworkData**: Provides blockchain network configurations
+
+<Note>
+All portfolio data updates in real-time as market prices change or when you complete transactions.
+</Note>
+
+## Best Practices
+
+<Tip>
+Regularly review your asset allocation chart to ensure your portfolio aligns with your risk tolerance and investment strategy.
+</Tip>
+
+<Warning>
+Always verify the network when depositing assets. Sending tokens on the wrong network may result in permanent loss of funds.
+</Warning>
+
+<Info>
+The minimum deposit amount varies by asset and network. Check the deposit modal for specific requirements before sending funds.
+</Info>
+
+## Related Features
+
+- [Staking](/features/staking) - Earn yield on idle assets
+- [Activity](/features/activity) - Track all portfolio transactions
+- [Custody](/features/custody) - Manage custody accounts and providers

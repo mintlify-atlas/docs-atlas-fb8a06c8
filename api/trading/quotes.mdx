@@ -1,0 +1,369 @@
+---
+title: 'Price Quotes'
+api: 'GET /api/conversion/quote/%TOKEN1/%TOKEN2'
+description: 'Get real-time price quotes for token conversion pairs'
+---
+
+## Overview
+
+The quote endpoint provides real-time pricing information for converting between two tokens. Use this endpoint before executing a conversion to get accurate estimates of exchange rates, fees, and limits.
+
+## Endpoint
+
+```
+GET /api/conversion/quote/{tokenFrom}/{tokenTo}
+```
+
+## Path Parameters
+
+<ParamField path="tokenFrom" type="string" required>
+  Source token symbol to convert from (e.g., BTC, ETH, USDC)
+</ParamField>
+
+<ParamField path="tokenTo" type="string" required>
+  Destination token symbol to convert to (e.g., BTC, ETH, USDT)
+</ParamField>
+
+## Query Parameters
+
+The quote endpoint can be configured with polling intervals for real-time updates:
+
+<ParamField query="pollIntervalMs" type="number" default="300000">
+  Polling interval in milliseconds for automatic quote refresh. Default is 300,000ms (5 minutes).
+  
+  Set to `0` to disable automatic refresh.
+</ParamField>
+
+## Response
+
+<ResponseField name="edge" type="object">
+  Trading edge information including pair details and side
+  
+  <ResponseField name="pair" type="object">
+    Trading pair configuration
+    
+    <ResponseField name="groupId" type="string">
+      Trading group identifier
+    </ResponseField>
+    
+    <ResponseField name="baseId" type="string">
+      Base currency symbol in the pair
+    </ResponseField>
+    
+    <ResponseField name="quoteId" type="string">
+      Quote currency symbol in the pair
+    </ResponseField>
+    
+    <ResponseField name="lastConfigNum" type="number">
+      Last configuration version number
+    </ResponseField>
+    
+    <ResponseField name="priority" type="number">
+      Pair priority ranking
+    </ResponseField>
+    
+    <ResponseField name="LastConfig" type="object">
+      Latest pair configuration details
+      
+      <ResponseField name="num" type="number">
+        Configuration version number
+      </ResponseField>
+      
+      <ResponseField name="groupId" type="string">
+        Trading group identifier
+      </ResponseField>
+      
+      <ResponseField name="baseId" type="string">
+        Base currency ID
+      </ResponseField>
+      
+      <ResponseField name="quoteId" type="string">
+        Quote currency ID
+      </ResponseField>
+      
+      <ResponseField name="createdAt" type="string">
+        Configuration creation timestamp (ISO 8601)
+      </ResponseField>
+      
+      <ResponseField name="makerFeePercent" type="string">
+        Fee percentage for maker orders
+      </ResponseField>
+      
+      <ResponseField name="takerFeePercent" type="string">
+        Fee percentage for taker orders
+      </ResponseField>
+      
+      <ResponseField name="limitSpreadAsk" type="string">
+        Ask spread for limit orders
+      </ResponseField>
+      
+      <ResponseField name="limitSpreadBid" type="string">
+        Bid spread for limit orders
+      </ResponseField>
+      
+      <ResponseField name="marketSpreadAsk" type="string">
+        Ask spread for market orders
+      </ResponseField>
+      
+      <ResponseField name="marketSpreadBid" type="string">
+        Bid spread for market orders
+      </ResponseField>
+      
+      <ResponseField name="tickSize" type="number">
+        Minimum price increment (tick size)
+      </ResponseField>
+      
+      <ResponseField name="stepSize" type="number">
+        Minimum quantity increment (step size)
+      </ResponseField>
+      
+      <ResponseField name="limitMinQuoteSize" type="string">
+        Minimum quote size for limit orders
+      </ResponseField>
+      
+      <ResponseField name="limitMaxQuoteSize" type="string">
+        Maximum quote size for limit orders
+      </ResponseField>
+      
+      <ResponseField name="liquidityProviderType" type="string">
+        Type of liquidity provider
+      </ResponseField>
+      
+      <ResponseField name="marketMinQuoteSize" type="string">
+        Minimum quote size for market orders
+      </ResponseField>
+      
+      <ResponseField name="marketMaxQuoteSize" type="string">
+        Maximum quote size for market orders
+      </ResponseField>
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="side" type="string">
+    Trading side: "BUY" or "SELL"
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="estSourceAmount" type="string">
+  Estimated source token amount
+</ResponseField>
+
+<ResponseField name="estDestAmount" type="string">
+  Estimated destination token amount you will receive
+</ResponseField>
+
+<ResponseField name="estPrice" type="string">
+  Estimated exchange rate (price per unit)
+</ResponseField>
+
+<ResponseField name="estMaxSize" type="string">
+  Maximum transaction size allowed for this pair
+</ResponseField>
+
+<ResponseField name="estMinSize" type="string">
+  Minimum transaction size required for this pair
+</ResponseField>
+
+## TypeScript Types
+
+```typescript
+interface QuoteData {
+  edge: {
+    pair: {
+      groupId: string;
+      baseId: string;
+      quoteId: string;
+      lastConfigNum: number;
+      priority: number;
+      LastConfig: {
+        num: number;
+        groupId: string;
+        baseId: string;
+        quoteId: string;
+        createdAt: string;
+        makerFeePercent: string;
+        takerFeePercent: string;
+        limitSpreadAsk: string;
+        limitSpreadBid: string;
+        marketSpreadAsk: string;
+        marketSpreadBid: string;
+        tickSize: number;
+        stepSize: number;
+        limitMinQuoteSize: string;
+        limitMaxQuoteSize: string;
+        liquidityProviderType: string;
+        marketMinQuoteSize: string;
+        marketMaxQuoteSize: string;
+      };
+    };
+    side: "SELL" | "BUY";
+  };
+  estSourceAmount: string;
+  estDestAmount: string;
+  estPrice: string;
+  estMaxSize: string;
+  estMinSize: string;
+}
+```
+
+## Example Request
+
+```bash
+curl -X GET https://api.crocante.io/api/conversion/quote/BTC/USDT \
+  -H "Authorization: Bearer YOUR_API_TOKEN"
+```
+
+## Example Response
+
+```json
+{
+  "data": {
+    "edge": {
+      "pair": {
+        "groupId": "main",
+        "baseId": "BTC",
+        "quoteId": "USDT",
+        "lastConfigNum": 42,
+        "priority": 1,
+        "LastConfig": {
+          "num": 42,
+          "groupId": "main",
+          "baseId": "BTC",
+          "quoteId": "USDT",
+          "createdAt": "2026-01-15T08:00:00.000Z",
+          "makerFeePercent": "0.1",
+          "takerFeePercent": "0.2",
+          "limitSpreadAsk": "0.0001",
+          "limitSpreadBid": "0.0001",
+          "marketSpreadAsk": "0.0002",
+          "marketSpreadBid": "0.0002",
+          "tickSize": 0.01,
+          "stepSize": 0.00001,
+          "limitMinQuoteSize": "10",
+          "limitMaxQuoteSize": "1000000",
+          "liquidityProviderType": "INTERNAL",
+          "marketMinQuoteSize": "10",
+          "marketMaxQuoteSize": "500000"
+        }
+      },
+      "side": "SELL"
+    },
+    "estSourceAmount": "1",
+    "estDestAmount": "68432.50",
+    "estPrice": "68432.50",
+    "estMaxSize": "100",
+    "estMinSize": "0.0001"
+  },
+  "status": 200
+}
+```
+
+## Quote Refresh Behavior
+
+The quote endpoint is designed for real-time price tracking:
+
+- **Stale Time**: 5 minutes (300,000ms)
+- **Default Refresh Interval**: 5 minutes (300,000ms)
+- **Background Refresh**: Enabled when `pollIntervalMs > 0`
+- **Refetch on Mount**: Only if data is stale
+
+### Customizing Refresh Intervals
+
+```typescript
+// Refresh every 30 seconds for high-frequency trading
+const quote = useQuote(userId, "ETH", "USDC", false, 30000);
+
+// Disable automatic refresh
+const quote = useQuote(userId, "BTC", "ETH", false, 0);
+
+// Default 5-minute refresh
+const quote = useQuote(userId, "SOL", "USDT", false, 300000);
+```
+
+## Price Calculation
+
+The `estPrice` field represents the exchange rate between the two tokens:
+
+```
+estDestAmount = estSourceAmount × estPrice
+```
+
+For example:
+- If converting 1 BTC to USDT
+- And `estPrice` = "68432.50"
+- Then `estDestAmount` = "68432.50" USDT
+
+## Size Limits
+
+- **Minimum Size** (`estMinSize`): Smallest amount you can convert
+- **Maximum Size** (`estMaxSize`): Largest amount you can convert in a single transaction
+
+These limits are enforced to ensure market stability and liquidity availability.
+
+## Fee Structure
+
+Fees depend on order execution type:
+
+- **Maker Fee**: Applied when your order adds liquidity to the order book (typically lower)
+- **Taker Fee**: Applied when your order removes liquidity from the order book (typically higher)
+
+Most conversions execute as market orders and incur taker fees.
+
+## Common Use Cases
+
+### Real-Time Price Display
+
+```typescript
+const { data: quote, isLoading } = useQuote(
+  userId,
+  "ETH",
+  "USDC",
+  false,
+  10000 // Refresh every 10 seconds
+);
+
+if (!isLoading && quote) {
+  console.log(`1 ETH = ${quote.estPrice} USDC`);
+}
+```
+
+### Pre-Conversion Validation
+
+```typescript
+const amount = "5.0";
+const quote = await fetchQuote("BTC", "ETH");
+
+if (parseFloat(amount) < parseFloat(quote.estMinSize)) {
+  console.error(`Minimum conversion amount is ${quote.estMinSize}`);
+}
+
+if (parseFloat(amount) > parseFloat(quote.estMaxSize)) {
+  console.error(`Maximum conversion amount is ${quote.estMaxSize}`);
+}
+```
+
+### Calculating Expected Output
+
+```typescript
+const inputAmount = "2.5"; // 2.5 BTC
+const quote = await fetchQuote("BTC", "USDT");
+
+const expectedOutput = parseFloat(inputAmount) * parseFloat(quote.estPrice);
+const feePercent = parseFloat(quote.edge.pair.LastConfig.takerFeePercent);
+const netOutput = expectedOutput * (1 - feePercent / 100);
+
+console.log(`You will receive approximately ${netOutput} USDT`);
+```
+
+## Error Handling
+
+The quote endpoint includes fallback to mock data on errors:
+
+- If authentication fails, returns cached or mock data
+- If network request fails, logs warning and uses fallback data
+- Query is disabled if `userId`, `tokenFrom`, or `tokenTo` are missing
+
+## Related Endpoints
+
+- [Token Conversion](/api/trading/conversion) - Execute the actual conversion
+- [Trading Pairs](/api/trading/pairs) - View all supported pairs

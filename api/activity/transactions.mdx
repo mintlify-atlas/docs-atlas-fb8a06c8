@@ -1,0 +1,804 @@
+---
+title: 'Transaction History'
+description: 'Retrieve paginated transaction history with support for multiple activity types'
+icon: 'clock-rotate-left'
+---
+
+## Endpoint
+
+<ParamField query="GET" path="/activity">
+  Retrieve user transaction history including deposits, withdrawals, staking, loans, and trades.
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="page" type="number" default="1">
+  The page number for pagination. Each page returns up to 10 transactions.
+</ParamField>
+
+<ParamField query="size" type="number" default="10">
+  Number of transactions to return per page.
+</ParamField>
+
+<ParamField query="statuses" type="string[]">
+  Filter by transaction status. Can be provided multiple times for multiple statuses.
+  
+  **Allowed values:** `ACTIVE`, `COMPLETED`, `CANCELED`
+  
+  Example: `?statuses=ACTIVE&statuses=COMPLETED`
+</ParamField>
+
+<ParamField query="fullTypes" type="string[]">
+  Filter by transaction type. Can be provided multiple times for multiple types.
+  
+  **Allowed values:**
+  - `DEPOSIT%` - All deposit types
+  - `WITHDRAWAL%` - All withdrawal types
+  - `STAKING%` - Staking operations
+  - `TRADE.CONVERSION%` - Currency conversion/swap operations
+  - `TRADE%` - All trade types
+  - `LOAN%` - Loan operations
+  
+  Example: `?fullTypes=DEPOSIT%&fullTypes=STAKING%`
+</ParamField>
+
+## Response
+
+The API returns an array of activity data objects. Each transaction has a base `operation` object and type-specific fields.
+
+<ResponseField name="data" type="ActivityData[]">
+  Array of transaction objects. The structure varies based on the transaction type.
+</ResponseField>
+
+<ResponseField name="status" type="number">
+  HTTP status code of the response.
+</ResponseField>
+
+### Common Operation Fields
+
+All transaction types include an `operation` object with these fields:
+
+<ResponseField name="operation.id" type="string">
+  Unique identifier for the operation.
+</ResponseField>
+
+<ResponseField name="operation.creatorId" type="string">
+  ID of the user who created the operation.
+</ResponseField>
+
+<ResponseField name="operation.ownerId" type="string">
+  ID of the user who owns the operation.
+</ResponseField>
+
+<ResponseField name="operation.openedAt" type="string">
+  ISO 8601 timestamp when the operation was opened.
+</ResponseField>
+
+<ResponseField name="operation.updatedAt" type="string">
+  ISO 8601 timestamp when the operation was last updated.
+</ResponseField>
+
+<ResponseField name="operation.closedAt" type="string | null">
+  ISO 8601 timestamp when the operation was closed, or null if still open.
+</ResponseField>
+
+<ResponseField name="operation.status" type="string">
+  Current status of the operation: `ACTIVE`, `COMPLETED`, or `CANCELED`.
+</ResponseField>
+
+<ResponseField name="operation.type" type="string">
+  The operation type: `DEPOSIT`, `WITHDRAWAL`, `STAKING`, `TRADE`, `LOAN`, `TRANSFER`.
+</ResponseField>
+
+<ResponseField name="operation.fullType" type="string">
+  Detailed operation type including subtype. Examples: `DEPOSIT.ADMIN`, `WITHDRAWAL.CRYPTO`, `TRADE.CONVERSION`.
+</ResponseField>
+
+## Transaction Types
+
+The Activity API returns different data structures based on the transaction type. Each type includes the common operation fields plus type-specific data.
+
+### Admin Operations (Deposits/Withdrawals)
+
+Admin-approved deposits and withdrawals include approval workflow information.
+
+<ResponseField name="type" type="'ADMIN'">
+  Identifies this as an admin operation.
+</ResponseField>
+
+<ResponseField name="currencyId" type="string">
+  Currency identifier (e.g., `USDT`, `BTC`, `ETH`).
+</ResponseField>
+
+<ResponseField name="amount" type="string">
+  Gross amount of the transaction.
+</ResponseField>
+
+<ResponseField name="netAmount" type="string">
+  Net amount after fees.
+</ResponseField>
+
+<ResponseField name="feeAmount" type="string">
+  Fee charged for the transaction.
+</ResponseField>
+
+<ResponseField name="grossAmount" type="string">
+  Total gross amount.
+</ResponseField>
+
+<ResponseField name="senderId" type="string">
+  ID of the sender (for withdrawals).
+</ResponseField>
+
+<ResponseField name="receiverId" type="string">
+  ID of the receiver (for deposits).
+</ResponseField>
+
+<ResponseField name="approverId" type="string | null">
+  ID of the admin who approved/rejected the operation.
+</ResponseField>
+
+<ResponseField name="approvalState" type="string">
+  Approval status: `APPROVED` or `REJECTED`.
+</ResponseField>
+
+<ResponseField name="currency" type="Currency">
+  Currency metadata object.
+  <Expandable title="Currency Object">
+    <ResponseField name="id" type="string">
+      Currency identifier.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Human-readable currency name.
+    </ResponseField>
+    <ResponseField name="decimals" type="number">
+      Number of decimal places for the currency.
+    </ResponseField>
+    <ResponseField name="allowTransfers" type="boolean">
+      Whether transfers are enabled for this currency.
+    </ResponseField>
+    <ResponseField name="disabled" type="boolean">
+      Whether the currency is currently disabled.
+    </ResponseField>
+    <ResponseField name="priority" type="number">
+      Display priority for the currency.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Crypto Operations
+
+Blockchain deposits and withdrawals with network information.
+
+<ResponseField name="type" type="'CRYPTO'">
+  Identifies this as a crypto blockchain operation.
+</ResponseField>
+
+<ResponseField name="currencyId" type="string">
+  Cryptocurrency identifier.
+</ResponseField>
+
+<ResponseField name="amount" type="string">
+  Transaction amount.
+</ResponseField>
+
+<ResponseField name="netAmount" type="string">
+  Net amount after network fees.
+</ResponseField>
+
+<ResponseField name="feeAmount" type="string">
+  Network fee amount.
+</ResponseField>
+
+<ResponseField name="networkId" type="string">
+  Blockchain network identifier.
+</ResponseField>
+
+<ResponseField name="network" type="Network">
+  Blockchain network details.
+  <Expandable title="Network Object">
+    <ResponseField name="id" type="string">
+      Network identifier.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Network name (e.g., "Ethereum", "Bitcoin").
+    </ResponseField>
+    <ResponseField name="mainCurrencyID" type="string">
+      Main currency of the network.
+    </ResponseField>
+    <ResponseField name="minConfirms" type="number">
+      Minimum confirmations required.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="address" type="string">
+  Wallet address for the transaction.
+</ResponseField>
+
+<ResponseField name="addressURL" type="string">
+  Block explorer URL for the address.
+</ResponseField>
+
+<ResponseField name="dstAddress" type="string">
+  Destination address (for withdrawals).
+</ResponseField>
+
+<ResponseField name="dstAddressURL" type="string">
+  Block explorer URL for destination address.
+</ResponseField>
+
+<ResponseField name="srcAddress" type="string">
+  Source address (for deposits).
+</ResponseField>
+
+<ResponseField name="srcAddressURL" type="string">
+  Block explorer URL for source address.
+</ResponseField>
+
+<ResponseField name="transactionHash" type="string | null">
+  Blockchain transaction hash.
+</ResponseField>
+
+<ResponseField name="transactionHashURL" type="string | null">
+  Block explorer URL for the transaction.
+</ResponseField>
+
+### Staking Operations
+
+Staking positions with yield calculations.
+
+<ResponseField name="typeId" type="string">
+  Staking product identifier (e.g., `ADA_180DAY`, `ETH_FLEX`).
+</ResponseField>
+
+<ResponseField name="startsAt" type="string">
+  ISO 8601 timestamp when staking period starts.
+</ResponseField>
+
+<ResponseField name="redeemableAt" type="string | null">
+  ISO 8601 timestamp when stake becomes redeemable. Null for flexible staking.
+</ResponseField>
+
+<ResponseField name="initialAmount" type="string">
+  Initial staked amount.
+</ResponseField>
+
+<ResponseField name="initialAPY" type="string">
+  Annual percentage yield at time of staking.
+</ResponseField>
+
+<ResponseField name="amount" type="string">
+  Current staked amount.
+</ResponseField>
+
+<ResponseField name="yield" type="string">
+  Yield earned to date.
+</ResponseField>
+
+<ResponseField name="estRedeemYield" type="string">
+  Estimated total yield at redemption.
+</ResponseField>
+
+<ResponseField name="apy" type="string">
+  Current annual percentage yield.
+</ResponseField>
+
+<ResponseField name="type" type="StakingType">
+  Staking product configuration.
+  <Expandable title="StakingType Object">
+    <ResponseField name="id" type="string">
+      Product identifier.
+    </ResponseField>
+    <ResponseField name="currencyId" type="string">
+      Currency being staked.
+    </ResponseField>
+    <ResponseField name="mode" type="'FIXED' | 'VARIABLE'">
+      Staking mode.
+    </ResponseField>
+    <ResponseField name="apy" type="string">
+      Product APY.
+    </ResponseField>
+    <ResponseField name="minAmount" type="string">
+      Minimum staking amount.
+    </ResponseField>
+    <ResponseField name="durationDays" type="number">
+      Lock period in days (only for fixed staking).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Convert/Trade Operations
+
+Currency conversion and trading operations.
+
+<ResponseField name="operationId" type="string">
+  Operation identifier.
+</ResponseField>
+
+<ResponseField name="groupId" type="string">
+  Trade group identifier (e.g., `CONVERT`).
+</ResponseField>
+
+<ResponseField name="baseId" type="string">
+  Base currency identifier.
+</ResponseField>
+
+<ResponseField name="quoteId" type="string">
+  Quote currency identifier.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Order type: `MARKET` or `LIMIT`.
+</ResponseField>
+
+<ResponseField name="side" type="string">
+  Order side: `BUY` or `SELL`.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Order status: `FILLED`, `PARTIAL`, `CANCELED`, etc.
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Order size.
+</ResponseField>
+
+<ResponseField name="filledSize" type="string">
+  Amount filled.
+</ResponseField>
+
+<ResponseField name="avgPrice" type="string | null">
+  Average fill price.
+</ResponseField>
+
+<ResponseField name="limitPrice" type="string | null">
+  Limit price (for limit orders).
+</ResponseField>
+
+<ResponseField name="creditCurrencyID" type="string">
+  Currency being credited.
+</ResponseField>
+
+<ResponseField name="debitCurrencyID" type="string">
+  Currency being debited.
+</ResponseField>
+
+<ResponseField name="creditAmount" type="string">
+  Gross amount credited.
+</ResponseField>
+
+<ResponseField name="netCreditAmount" type="string">
+  Net amount credited after fees.
+</ResponseField>
+
+<ResponseField name="grossCreditAmount" type="string">
+  Total gross credit amount.
+</ResponseField>
+
+<ResponseField name="debitAmount" type="string">
+  Amount debited.
+</ResponseField>
+
+<ResponseField name="feeAmount" type="string">
+  Trading fee charged.
+</ResponseField>
+
+<ResponseField name="makerFeePercent" type="string">
+  Maker fee percentage.
+</ResponseField>
+
+<ResponseField name="takerFeePercent" type="string">
+  Taker fee percentage.
+</ResponseField>
+
+<ResponseField name="execType" type="string">
+  Execution type: `IMMEDIATE`, `POST_ONLY`, etc.
+</ResponseField>
+
+<ResponseField name="liquidityProviderType" type="string">
+  Liquidity provider (e.g., `OKX`).
+</ResponseField>
+
+<ResponseField name="lastFilledAt" type="string | null">
+  ISO 8601 timestamp of last fill.
+</ResponseField>
+
+### Loan Operations
+
+Collateralized loan positions.
+
+<ResponseField name="typeId" type="string">
+  Loan product identifier.
+</ResponseField>
+
+<ResponseField name="sizeCurrencyId" type="string">
+  Currency of the loan.
+</ResponseField>
+
+<ResponseField name="collatCurrencyId" type="string">
+  Currency used as collateral.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Loan status.
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Loan amount.
+</ResponseField>
+
+<ResponseField name="collat" type="string">
+  Current collateral amount.
+</ResponseField>
+
+<ResponseField name="repayed" type="string">
+  Amount repaid.
+</ResponseField>
+
+<ResponseField name="debt" type="string">
+  Remaining debt including interest.
+</ResponseField>
+
+<ResponseField name="interest" type="string">
+  Accrued interest.
+</ResponseField>
+
+<ResponseField name="ratio" type="string">
+  Current collateralization ratio.
+</ResponseField>
+
+<ResponseField name="liqPrice" type="string">
+  Liquidation price.
+</ResponseField>
+
+<ResponseField name="apr" type="string">
+  Current annual percentage rate.
+</ResponseField>
+
+<ResponseField name="tierNum" type="number">
+  Current interest tier.
+</ResponseField>
+
+<ResponseField name="minCollat" type="string">
+  Minimum collateral required.
+</ResponseField>
+
+<ResponseField name="initialAPR" type="string">
+  APR at loan origination.
+</ResponseField>
+
+<ResponseField name="initialRatio" type="string">
+  Initial collateralization ratio.
+</ResponseField>
+
+<ResponseField name="initialSize" type="string">
+  Initial loan size.
+</ResponseField>
+
+<ResponseField name="initialCollat" type="string">
+  Initial collateral amount.
+</ResponseField>
+
+<ResponseField name="initialDebt" type="string">
+  Initial debt amount.
+</ResponseField>
+
+<ResponseField name="origFee" type="string">
+  Origination fee.
+</ResponseField>
+
+<ResponseField name="forcedLiq" type="boolean">
+  Whether the loan was force-liquidated.
+</ResponseField>
+
+<ResponseField name="tiers" type="Tier[]">
+  Interest rate tiers.
+  <Expandable title="Tier Object">
+    <ResponseField name="minRatio" type="string">
+      Minimum ratio for this tier.
+    </ResponseField>
+    <ResponseField name="minPrice" type="string">
+      Minimum price for this tier.
+    </ResponseField>
+    <ResponseField name="apr" type="string">
+      APR for this tier.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="lastUpdate" type="LoanUpdate">
+  Most recent loan update.
+  <Expandable title="LoanUpdate Object">
+    <ResponseField name="createdAt" type="string">
+      Update timestamp.
+    </ResponseField>
+    <ResponseField name="type" type="string">
+      Update type.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Status after update.
+    </ResponseField>
+    <ResponseField name="apr" type="string">
+      APR after update.
+    </ResponseField>
+    <ResponseField name="dCollat" type="string">
+      Change in collateral.
+    </ResponseField>
+    <ResponseField name="dRepayed" type="string">
+      Change in repayment.
+    </ResponseField>
+    <ResponseField name="liqCollat" type="string">
+      Liquidated collateral.
+    </ResponseField>
+    <ResponseField name="price" type="string">
+      Asset price at update.
+    </ResponseField>
+    <ResponseField name="dFees" type="string">
+      Fees charged.
+    </ResponseField>
+    <ResponseField name="dTierNum" type="number">
+      Change in tier.
+    </ResponseField>
+    <ResponseField name="forcedLiq" type="boolean">
+      Whether this was a forced liquidation.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Transfer Operations
+
+Internal platform transfers between users.
+
+<ResponseField name="type" type="'TRANSFER'">
+  Identifies this as an internal transfer.
+</ResponseField>
+
+<ResponseField name="currencyId" type="string">
+  Currency identifier.
+</ResponseField>
+
+<ResponseField name="amount" type="string">
+  Transfer amount.
+</ResponseField>
+
+<ResponseField name="netAmount" type="string">
+  Net amount after fees.
+</ResponseField>
+
+<ResponseField name="feeAmount" type="string">
+  Transfer fee.
+</ResponseField>
+
+<ResponseField name="grossAmount" type="string">
+  Gross transfer amount.
+</ResponseField>
+
+<ResponseField name="senderId" type="string">
+  ID of the sender.
+</ResponseField>
+
+<ResponseField name="receiverId" type="string">
+  ID of the receiver.
+</ResponseField>
+
+<ResponseField name="receiver" type="string">
+  Receiver username or identifier.
+</ResponseField>
+
+## Examples
+
+### Get All Transactions (First Page)
+
+```bash
+GET /activity?page=1&size=10
+```
+
+### Filter by Status
+
+Get only completed transactions:
+
+```bash
+GET /activity?page=1&size=10&statuses=COMPLETED
+```
+
+Get active and completed transactions:
+
+```bash
+GET /activity?page=1&size=10&statuses=ACTIVE&statuses=COMPLETED
+```
+
+### Filter by Transaction Type
+
+Get only deposits:
+
+```bash
+GET /activity?page=1&size=10&fullTypes=DEPOSIT%
+```
+
+Get staking and deposits:
+
+```bash
+GET /activity?page=1&size=10&fullTypes=STAKING%&fullTypes=DEPOSIT%
+```
+
+### Combine Filters
+
+Get completed deposits and withdrawals:
+
+```bash
+GET /activity?page=1&size=10&statuses=COMPLETED&fullTypes=DEPOSIT%&fullTypes=WITHDRAWAL%
+```
+
+## Response Example: Admin Deposit
+
+```json
+{
+  "data": [
+    {
+      "type": "ADMIN",
+      "id": "a23339c3-89ec-4c0c-b9a4-745619eae679",
+      "currencyId": "USDT",
+      "amount": "10",
+      "netAmount": "10",
+      "feeAmount": "0",
+      "grossAmount": "10",
+      "receiverId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+      "approverId": "b285cab6-8038-44f4-85e9-39215b1eed18",
+      "approvalState": "APPROVED",
+      "operation": {
+        "id": "80f00687-0de3-413f-b4c6-0385400b3dc0",
+        "creatorId": "b285cab6-8038-44f4-85e9-39215b1eed18",
+        "ownerId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+        "openedAt": "2026-01-14T15:22:37.751081Z",
+        "updatedAt": "2026-01-14T15:23:02.770695Z",
+        "closedAt": "2026-01-14T15:23:02.770695Z",
+        "status": "COMPLETED",
+        "type": "DEPOSIT",
+        "fullType": "DEPOSIT.ADMIN"
+      },
+      "currency": {
+        "id": "USDT",
+        "name": "Tether",
+        "decimals": 2,
+        "allowTransfers": true,
+        "disabled": false,
+        "priority": 3
+      }
+    }
+  ],
+  "status": 200
+}
+```
+
+## Response Example: Staking
+
+```json
+{
+  "data": [
+    {
+      "typeId": "ADA_180DAY",
+      "startsAt": "2026-01-21T00:00:00Z",
+      "redeemableAt": "2026-07-20T00:00:00Z",
+      "initialAmount": "1",
+      "initialAPY": "0.04",
+      "amount": "1",
+      "yield": "0",
+      "estRedeemYield": "0.01952998",
+      "apy": "0.04",
+      "operation": {
+        "id": "1147d03d-2384-4981-b133-61ad352f59ec",
+        "creatorId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+        "ownerId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+        "openedAt": "2026-01-20T18:49:11.428971Z",
+        "updatedAt": "2026-01-20T18:49:11.428971Z",
+        "closedAt": null,
+        "status": "ACTIVE",
+        "type": "STAKING",
+        "fullType": "STAKING"
+      },
+      "type": {
+        "id": "ADA_180DAY",
+        "currencyId": "ADA",
+        "mode": "FIXED",
+        "durationDays": 180,
+        "apy": "0.04",
+        "minAmount": "0"
+      }
+    }
+  ],
+  "status": 200
+}
+```
+
+## Response Example: Trade/Conversion
+
+```json
+{
+  "data": [
+    {
+      "operationId": "e79a12b9-0981-439f-8a49-a1e226b89516",
+      "groupId": "CONVERT",
+      "baseId": "USDC",
+      "quoteId": "USDT",
+      "limitPrice": null,
+      "type": "MARKET",
+      "side": "BUY",
+      "status": "FILLED",
+      "size": "20",
+      "filledSize": "19.984012",
+      "avgPrice": "1.0008",
+      "lastFilledAt": "2026-01-09T14:40:23.906478Z",
+      "creditCurrencyID": "USDC",
+      "debitCurrencyID": "USDT",
+      "creditAmount": "19.914067958",
+      "netCreditAmount": "19.914067958",
+      "grossCreditAmount": "19.984012",
+      "debitAmount": "19.9999992096",
+      "feeAmount": "0.069944042",
+      "makerFeePercent": "0.0035",
+      "takerFeePercent": "0.0035",
+      "execType": "IMMEDIATE",
+      "liquidityProviderType": "OKX",
+      "operation": {
+        "id": "e79a12b9-0981-439f-8a49-a1e226b89516",
+        "creatorId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+        "ownerId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+        "openedAt": "2026-01-09T14:40:23.508926Z",
+        "updatedAt": "2026-01-09T14:40:23.906478Z",
+        "closedAt": "2026-01-09T14:40:23.906478Z",
+        "status": "COMPLETED",
+        "type": "TRADE",
+        "fullType": "TRADE.CONVERSION"
+      }
+    }
+  ],
+  "status": 200
+}
+```
+
+## Pagination
+
+The Activity API uses offset-based pagination:
+
+- Use the `page` parameter to navigate through results
+- Each page returns up to `size` transactions (default 10)
+- Transactions are ordered by `openedAt` timestamp (newest first)
+- To get the next page, increment the `page` parameter
+
+<Note>
+  The API returns a maximum of 10 transactions per page. If you need to retrieve all transactions, you must paginate through multiple requests.
+</Note>
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong.
+</ResponseField>
+
+<ResponseField name="status" type="number">
+  HTTP error status code (e.g., 400, 401, 500).
+</ResponseField>
+
+### Common Errors
+
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Invalid query parameters |
+| 401 | Unauthorized - missing or invalid authentication |
+| 404 | User not found |
+| 500 | Internal server error |
+
+## Implementation Notes
+
+<Warning>
+  Transaction amounts are returned as strings to preserve precision. Always parse them as decimals, never as floating-point numbers.
+</Warning>
+
+<Info>
+  The `fullType` filter uses the `%` wildcard to match all subtypes. For example, `DEPOSIT%` matches both `DEPOSIT.ADMIN` and `DEPOSIT.CRYPTO`.
+</Info>
+
+<Tip>
+  Use the `currency.decimals` field to properly format amounts for display. Each currency may have different decimal precision.
+</Tip>

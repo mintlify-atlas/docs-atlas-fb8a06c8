@@ -1,0 +1,320 @@
+---
+title: 'Token Conversion'
+api: 'POST /api/conversion/%TOKEN1/%TOKEN2'
+description: 'Execute token-to-token conversions (swaps) with real-time pricing'
+---
+
+## Overview
+
+The conversion endpoint allows you to swap one cryptocurrency token for another. The platform automatically handles routing, fee calculation, and order execution through the trading engine.
+
+## Endpoint
+
+```
+POST /api/conversion/{tokenFrom}/{tokenTo}
+```
+
+## Path Parameters
+
+<ParamField path="tokenFrom" type="string" required>
+  Source token symbol to convert from (e.g., BTC, ETH, USDC)
+</ParamField>
+
+<ParamField path="tokenTo" type="string" required>
+  Destination token symbol to convert to (e.g., BTC, ETH, USDT)
+</ParamField>
+
+## Request Body
+
+<ParamField body="amount" type="string" required>
+  Amount of the source token to convert. Must be provided as a string to preserve precision for decimal values.
+  
+  Example: `"0.5"` for 0.5 BTC
+</ParamField>
+
+## Response
+
+The conversion endpoint returns detailed information about the executed order:
+
+<ResponseField name="operationId" type="string">
+  Unique identifier for this conversion operation
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current status of the conversion (e.g., "FILLED", "PENDING", "CANCELLED")
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Order type (typically "MARKET" for instant conversions)
+</ResponseField>
+
+<ResponseField name="side" type="string">
+  Trading side: "BUY" or "SELL"
+</ResponseField>
+
+<ResponseField name="groupId" type="string">
+  Trading group identifier
+</ResponseField>
+
+<ResponseField name="baseId" type="string">
+  Base currency ID in the trading pair
+</ResponseField>
+
+<ResponseField name="quoteId" type="string">
+  Quote currency ID in the trading pair
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Total order size
+</ResponseField>
+
+<ResponseField name="filledSize" type="string">
+  Amount of the order that has been filled
+</ResponseField>
+
+<ResponseField name="avgPrice" type="string" nullable>
+  Average execution price for the conversion
+</ResponseField>
+
+<ResponseField name="creditCurrencyID" type="string">
+  Currency ID being credited (destination token)
+</ResponseField>
+
+<ResponseField name="debitCurrencyID" type="string">
+  Currency ID being debited (source token)
+</ResponseField>
+
+<ResponseField name="creditAmount" type="string">
+  Gross amount credited before fees
+</ResponseField>
+
+<ResponseField name="netCreditAmount" type="string">
+  Net amount credited after fees
+</ResponseField>
+
+<ResponseField name="grossCreditAmount" type="string">
+  Total credit amount
+</ResponseField>
+
+<ResponseField name="debitAmount" type="string">
+  Amount debited from source token
+</ResponseField>
+
+<ResponseField name="feeAmount" type="string">
+  Total fee charged for the conversion
+</ResponseField>
+
+<ResponseField name="makerFeePercent" type="string">
+  Maker fee percentage applied
+</ResponseField>
+
+<ResponseField name="takerFeePercent" type="string">
+  Taker fee percentage applied
+</ResponseField>
+
+<ResponseField name="execType" type="string">
+  Execution type identifier
+</ResponseField>
+
+<ResponseField name="liquidityProviderType" type="string">
+  Type of liquidity provider used for this conversion
+</ResponseField>
+
+<ResponseField name="lastFilledAt" type="string" nullable>
+  Timestamp when the order was last filled (ISO 8601 format)
+</ResponseField>
+
+<ResponseField name="operation" type="object">
+  Nested operation details
+  
+  <ResponseField name="id" type="string">
+    Operation unique identifier
+  </ResponseField>
+  
+  <ResponseField name="creatorId" type="string">
+    User ID who created the operation
+  </ResponseField>
+  
+  <ResponseField name="ownerId" type="string">
+    User ID who owns the operation
+  </ResponseField>
+  
+  <ResponseField name="openedAt" type="string">
+    Timestamp when operation was opened
+  </ResponseField>
+  
+  <ResponseField name="updatedAt" type="string">
+    Timestamp when operation was last updated
+  </ResponseField>
+  
+  <ResponseField name="closedAt" type="string" nullable>
+    Timestamp when operation was closed (if applicable)
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Operation status
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    Operation type
+  </ResponseField>
+  
+  <ResponseField name="fullType" type="string">
+    Full operation type descriptor
+  </ResponseField>
+</ResponseField>
+
+## TypeScript Types
+
+```typescript
+interface PostConversionData {
+  operationId: string;
+  groupId: string;
+  baseId: string;
+  quoteId: string;
+  limitPrice: string | null;
+  type: string;
+  side: string;
+  status: string;
+  size: string;
+  lastFilledAt: string | null;
+  filledSize: string;
+  avgPrice: string | null;
+  canceling: boolean;
+  makerFeePercent: string;
+  takerFeePercent: string;
+  execType: string;
+  triggeredAt: string | null;
+  triggerPrice: string | null;
+  triggerPriceHigh: string | null;
+  triggerPriceLow: string | null;
+  operation: {
+    id: string;
+    creatorId: string;
+    ownerId: string;
+    openedAt: string;
+    updatedAt: string;
+    closedAt: string | null;
+    status: string;
+    type: string;
+    fullType: string;
+  };
+  baseSize: string | null;
+  quoteSize: string | null;
+  filledQuoteSize: string;
+  creditCurrencyID: string;
+  debitCurrencyID: string;
+  estCreditAmount: string | null;
+  estGrossCreditAmount: string | null;
+  estNetCreditAmount: string | null;
+  estDebitAmount: string;
+  estFeeAmount: string | null;
+  creditAmount: string;
+  netCreditAmount: string;
+  grossCreditAmount: string;
+  debitAmount: string;
+  feeAmount: string;
+  tickSize: number;
+  stepSize: number;
+  liquidityProviderType: string;
+  triggerPriceHighBaseSize: string | null;
+  triggerPriceLowBaseSize: string | null;
+  triggerPriceHighQuoteSize: string | null;
+  triggerPriceLowQuoteSize: string | null;
+}
+```
+
+## Example Request
+
+```bash
+curl -X POST https://api.crocante.io/api/conversion/BTC/ETH \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "0.1"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "data": {
+    "operationId": "op_abc123xyz",
+    "groupId": "main",
+    "baseId": "BTC",
+    "quoteId": "ETH",
+    "limitPrice": null,
+    "type": "MARKET",
+    "side": "SELL",
+    "status": "FILLED",
+    "size": "0.1",
+    "lastFilledAt": "2026-03-12T10:30:45.123Z",
+    "filledSize": "0.1",
+    "avgPrice": "16.234",
+    "canceling": false,
+    "makerFeePercent": "0.1",
+    "takerFeePercent": "0.2",
+    "execType": "TAKER",
+    "triggeredAt": null,
+    "triggerPrice": null,
+    "triggerPriceHigh": null,
+    "triggerPriceLow": null,
+    "operation": {
+      "id": "op_abc123xyz",
+      "creatorId": "user_123",
+      "ownerId": "user_123",
+      "openedAt": "2026-03-12T10:30:45.000Z",
+      "updatedAt": "2026-03-12T10:30:45.123Z",
+      "closedAt": "2026-03-12T10:30:45.123Z",
+      "status": "CLOSED",
+      "type": "CONVERSION",
+      "fullType": "MARKET_CONVERSION"
+    },
+    "baseSize": "0.1",
+    "quoteSize": null,
+    "filledQuoteSize": "1.623",
+    "creditCurrencyID": "ETH",
+    "debitCurrencyID": "BTC",
+    "estCreditAmount": "1.623",
+    "estGrossCreditAmount": "1.623",
+    "estNetCreditAmount": "1.6197",
+    "estDebitAmount": "0.1",
+    "estFeeAmount": "0.0033",
+    "creditAmount": "1.623",
+    "netCreditAmount": "1.6197",
+    "grossCreditAmount": "1.623",
+    "debitAmount": "0.1",
+    "feeAmount": "0.0033",
+    "tickSize": 0.001,
+    "stepSize": 0.0001,
+    "liquidityProviderType": "INTERNAL",
+    "triggerPriceHighBaseSize": null,
+    "triggerPriceLowBaseSize": null,
+    "triggerPriceHighQuoteSize": null,
+    "triggerPriceLowQuoteSize": null
+  },
+  "status": 200
+}
+```
+
+## Conversion Flow
+
+1. **Get Quote**: First call the [Quote endpoint](/api/trading/quotes) to get current pricing
+2. **Verify Pair**: Ensure the token pair is supported via [Trading Pairs](/api/trading/pairs)
+3. **Execute Conversion**: Submit the conversion with your desired amount
+4. **Receive Confirmation**: The response includes final amounts, fees, and execution details
+5. **Portfolio Update**: User's portfolio balances are automatically updated
+
+## Important Notes
+
+- All numeric values are returned as strings to preserve precision
+- Conversions execute as market orders for immediate settlement
+- Fees are automatically calculated based on maker/taker fee percentages
+- The `netCreditAmount` reflects the actual amount received after fees
+- Quote prices refresh every 5 minutes (300,000ms) by default
+- Successful conversions automatically invalidate portfolio cache to reflect updated balances
+
+## Supported Tokens
+
+See the [Trading Pairs](/api/trading/pairs) endpoint for a complete list of supported token conversions.

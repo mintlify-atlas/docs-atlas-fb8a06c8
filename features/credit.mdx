@@ -1,0 +1,295 @@
+---
+title: Credit & Lending
+description: Borrow against your crypto assets with flexible over-collateralized loans
+icon: hand-holding-dollar
+---
+
+## Overview
+
+The Credit feature enables you to access liquidity without selling your cryptocurrency holdings. Take out over-collateralized loans by pledging crypto assets as collateral, with flexible terms, competitive rates, and real-time liquidation price monitoring.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Collateralized Loans" icon="shield">
+    Borrow stablecoins and other assets using your crypto as collateral
+  </Card>
+  <Card title="Flexible Terms" icon="sliders">
+    Choose loan duration, over-collateralization ratio, and repayment schedule
+  </Card>
+  <Card title="Liquidation Protection" icon="chart-line">
+    Monitor liquidation prices in real-time to manage risk
+  </Card>
+  <Card title="Debt Management" icon="gear">
+    Adjust collateral or repay debt anytime to improve loan health
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Loan Types
+
+The `LoanComponent` supports various loan models:
+
+- **Short-Term**: 7-30 day loans with lower origination fees
+- **Medium-Term**: 30-90 day loans balanced for rate and flexibility  
+- **Long-Term**: 90+ day loans with predictable long-term rates
+
+Each loan type has distinct:
+- APR (Annual Percentage Rate)
+- Over-collateralization requirements
+- Origination fee percentages
+- Minimum/maximum loan sizes
+
+### Loan Interface
+
+The main credit interface (`LoanComponent`) provides:
+
+1. **Loan Asset Selection**: Choose what you want to borrow (e.g., USDC, USDT)
+2. **Collateral Selection**: Pick which crypto to pledge (e.g., BTC, ETH)
+3. **Quantity Input**:
+   - Enter loan amount in the borrowed asset
+   - System auto-calculates required collateral
+   - Real-time conversion using `useTokenSwap` hook
+   - Min/Max buttons for quick selection
+
+4. **Loan Type Tabs**: Switch between available loan models
+
+5. **Loan Calculator**: Displays critical metrics:
+   - **APY**: Interest rate for the loan
+   - **Over-collateralization**: Required collateral ratio (e.g., 150%)
+   - **Origination Fee**: Upfront cost as percentage
+   - **Origination Cost**: Fee amount in borrowed asset
+   - **Over-collateralization Cost**: Extra collateral required
+   - **Loan Total Cost**: Principal + origination + over-collateralization
+   - **Collateral**: Total collateral amount needed
+   - **Liquidation Price**: Price at which loan gets liquidated
+   - **Daily Cost**: Interest accrued per day
+
+### Loan Calculation
+
+The `useLoanSelectedData` hook computes all loan metrics:
+
+```tsx
+// Example loan calculation flow:
+Loan Amount: 10,000 USDC
+Collateral: ETH (price: $2,000)
+Over-collateralization: 150%
+
+→ Collateral Required: 10,000 × 1.5 ÷ 2,000 = 7.5 ETH
+→ Origination Fee (2%): 200 USDC  
+→ Liquidation Price: Calculate based on 150% ratio
+```
+
+<Warning>
+If the collateral asset price drops to the liquidation price, your collateral will be automatically liquidated to repay the loan. Monitor this metric closely.
+</Warning>
+
+### Loan History
+
+The `LoanHistoryTable` component shows:
+
+- All active loans with current health status
+- Historical loan records
+- Filterable by:
+  - Loan type
+  - Collateral asset
+  - Borrowed asset
+  - Status (Active, Repaid, Liquidated)
+  - Date range via `useLoanHistoryFilters`
+
+### Manage Existing Loans
+
+For active loans, you can:
+
+<Tabs>
+  <Tab title="Manage Debt">
+    Use `ManageDebtModal` to:
+    - Repay partial or full loan amount
+    - View current debt balance
+    - See interest accrued
+    - Check remaining term
+  </Tab>
+  
+  <Tab title="Manage Collateral">
+    Use `ManageCollateralModal` to:
+    - Add more collateral to improve loan health
+    - Reduce liquidation risk
+    - View current collateral ratio
+    - See updated liquidation price
+  </Tab>
+</Tabs>
+
+## How to Take Out a Loan
+
+<Steps>
+  <Step title="Navigate to Credit">
+    Go to the Credit page from the main menu. You'll see the loan interface and your loan history.
+  </Step>
+  
+  <Step title="Select Borrow Asset">
+    Choose what you want to borrow from the "Asset" dropdown. Typically stablecoins like USDC or USDT for accessing USD liquidity.
+  </Step>
+  
+  <Step title="Select Collateral">
+    Choose which cryptocurrency to pledge as collateral. Higher-value, less volatile assets often get better terms.
+  </Step>
+  
+  <Step title="Choose Loan Type">
+    Review the loan type tabs:
+    - Compare APY rates
+    - Check over-collateralization requirements
+    - Consider origination fees
+    - Match duration to your needs
+  </Step>
+  
+  <Step title="Enter Loan Amount">
+    Input how much you want to borrow:
+    - Type the quantity directly
+    - Use "MIN" for minimum loan amount
+    - Use "MAX" for maximum based on available collateral
+    - System auto-calculates required collateral
+  </Step>
+  
+  <Step title="Review Loan Terms">
+    Carefully review all displayed metrics:
+    - Total collateral required
+    - Liquidation price
+    - Daily interest cost
+    - Origination fee
+    - Total loan cost
+  </Step>
+  
+  <Step title="Confirm Loan">
+    Click the "Loan" button. The system will:
+    - Validate inputs via `useValueVerifier`
+    - Check available collateral balance
+    - Submit loan via `usePostLoan` mutation
+    - Display liquidation price in success toast
+    - Update loan history
+  </Step>
+</Steps>
+
+## Loan Workflow
+
+The loan creation process:
+
+```tsx
+// From credit.tsx
+const handleLoan = (userId: string, ratio: string, size: string, typeId: string) => {
+  postLoan.mutate(
+    { userId, ratio, size, typeId },
+    {
+      onSuccess: (data) => {
+        showToast(
+          `Loan successful. Liquidation price: ${data.liqPrice} ${data.sizeCurrencyId}/${data.collatCurrencyId}`,
+          ToastType.SUCCESS
+        );
+      },
+      onError: (err) => {
+        showToast(getDisplayMessage(err, "Loan failed"), ToastType.ERROR);
+      }
+    }
+  );
+};
+```
+
+## Loan Health Monitoring
+
+For active loans, monitor these key indicators:
+
+1. **Collateral Ratio**: Current collateral value ÷ loan value
+   - Should stay above over-collateralization requirement
+   - Warning if approaching liquidation threshold
+
+2. **Liquidation Price**: Critical price level for collateral
+   - Loan liquidates if collateral price hits this level
+   - Calculated based on required ratio
+
+3. **Accrued Interest**: Daily interest adding to loan balance
+   - Compounds based on APY
+   - Added to total debt owed
+
+<Note>
+The `LoanInfo` component displays real-time loan health metrics for all active positions.
+</Note>
+
+## Data Components
+
+Key hooks used by the credit feature:
+
+- **useLoanData**: Fetches available loan types and user's eligible assets
+- **useLoanSelectedData**: Computes all loan metrics (liquidation price, costs, etc.)
+- **useTokenSwap**: Handles collateral ↔ loan asset conversions
+- **useValueVerifier**: Validates loan and collateral amounts
+- **usePostLoan**: Mutation hook for creating loans
+- **useLoanHistoryData**: Retrieves user's loan history
+- **useLoanHistoryFilters**: Manages history table filters
+- **useLoanEventsData**: Tracks loan-related events (repayments, liquidations)
+
+## Risk Management
+
+<Warning>
+**Liquidation Risk**: If your collateral value drops significantly, your loan may be automatically liquidated. Always maintain a healthy collateral ratio above the minimum requirement.
+</Warning>
+
+<Tip>
+Add extra collateral beyond the minimum requirement to create a safety buffer against price volatility. A 200% collateral ratio is safer than 150%.
+</Tip>
+
+<Tip>
+Set up price alerts for your collateral assets to get notified before approaching liquidation levels.
+</Tip>
+
+## Loan Examples
+
+### Conservative Loan
+
+- **Borrow**: 5,000 USDC
+- **Collateral**: 2 ETH (@ $2,500 = $5,000)
+- **Over-collateralization**: 200% (conservative)
+- **Required Collateral**: 10,000 ÷ 2,500 = 4 ETH
+- **Liquidation Price**: ~$1,250 per ETH
+- **APY**: 6.5%
+- **Daily Cost**: 0.89 USDC
+
+### Aggressive Loan
+
+- **Borrow**: 10,000 USDC  
+- **Collateral**: 3 BTC (@ $50,000 = $150,000)
+- **Over-collateralization**: 150% (minimum)
+- **Required Collateral**: 15,000 ÷ 50,000 = 0.3 BTC
+- **Liquidation Price**: ~$40,000 per BTC
+- **APY**: 8.2%
+- **Daily Cost**: 2.25 USDC
+
+## Session Modes
+
+<Info>
+In mock/demo mode, loan simulations are available but actual loan creation is restricted. The interface will show "isSessionModeMock" warnings.
+</Info>
+
+## Troubleshooting
+
+**Loan button is disabled:**
+- Check you have sufficient collateral balance
+- Verify loan amount is within min/max bounds
+- Ensure both asset and collateral are selected
+- Confirm collateral value meets over-collateralization requirement
+
+**Collateral not auto-calculating:**
+- Wait for `useTokenSwap` hook to fetch conversion rates
+- Verify both assets have valid market prices
+- Check network connection
+
+**Error: "Loan failed"**
+- Review error message from `getDisplayMessage`
+- Check if assets are supported for loans
+- Verify account has borrowing permissions
+- Ensure no existing loan limits are exceeded
+
+## Related Features
+
+- [Portfolio](/features/portfolio) - View total loan obligations
+- [Activity](/features/activity) - Track loan events and repayments
+- [Governance](/features/governance) - Loan policies and approval workflows

@@ -1,80 +1,540 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get started with Crocante in minutes - from signup to your first portfolio view
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through getting started with Crocante, from initial registration to viewing your portfolio and executing your first operation. You'll be up and running in less than 10 minutes.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before you begin, make sure you have:
+- A modern web browser (Chrome, Firefox, Safari, or Edge)
+- An email address for account registration
+- Government-issued ID for KYC verification
+- (Optional) Custodian credentials if connecting real assets
 
-### Step 2: Deploy your changes
+<Info>
+  **Mock Mode**: You can skip KYC and custodian setup by using mock mode, which provides simulated data for testing all platform features.
+</Info>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+## Step 1: Choose Your Mode
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+Crocante supports two operational modes:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Mock Mode (Recommended for First-Time Users)">
+    Mock mode allows you to explore all features with simulated data. Perfect for:
+    - Learning the platform interface
+    - Testing workflows before connecting real assets
+    - Development and integration testing
 
-### Step 3: Go live
+    To use mock mode, simply click **"Continue with Mock Data"** on the login screen.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    ```typescript
+    // Mock mode is activated via login service
+    // Source: services/api/auth/login-service.ts:7
+    async loginMock(): Promise<boolean> {
+      LocalStorageManager.clearLocalStorage();
+      LocalStorageManager.setItem(LocalStorageKeys.SESSION_MODE, "mock");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("session-mode-changed"));
+      }
+      return Promise.resolve(true);
+    }
+    ```
 
-## Next steps
+    Mock mode provides:
+    - Sample portfolio with BTC, ETH, USDT, and USD holdings
+    - Multiple custodians (exchanges, wallets, banks)
+    - Full access to staking, credit, governance, and custody features
+  </Step>
 
-Now that you have your docs running, explore these key features:
+  <Step title="Real Mode (For Live Asset Management)">
+    Real mode connects to backend APIs and manages actual assets. Use this for:
+    - Managing real cryptocurrency and fiat holdings
+    - Production use cases
+    - Institutional portfolio management
 
-<CardGroup cols={2}>
+    Click **"Login"** or **"Register"** to use real mode.
+  </Step>
+</Steps>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+## Step 2: Register Your Account (Real Mode Only)
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Skip this section if you're using mock mode. Mock mode doesn't require registration.
 </Note>
+
+The registration process consists of 5 steps to ensure compliance and security:
+
+<Steps>
+  <Step title="Create Account">
+    Provide your basic account credentials:
+    - Email address
+    - Password (must meet security requirements)
+    - Confirm password
+
+    ```typescript
+    // Registration form location: components/auth/register/steps/account.tsx
+    // The form validates:
+    // - Email format
+    // - Password strength
+    // - Password confirmation match
+    ```
+
+    Click **"Continue"** to proceed to email verification.
+  </Step>
+
+  <Step title="Verify Email (OTP)">
+    An OTP (One-Time Password) will be sent to your email address.
+
+    - Check your email inbox for the verification code
+    - Enter the 6-digit code in the OTP field
+    - Click **"Verify"** to confirm your email
+
+    ```typescript
+    // OTP verification component: components/auth/register/steps/otp.tsx
+    // Features:
+    // - 6-digit input field
+    // - Resend OTP functionality
+    // - Automatic validation on complete
+    ```
+
+    <Tip>
+      Didn't receive the code? Click **"Resend OTP"** to request a new verification code.
+    </Tip>
+  </Step>
+
+  <Step title="Personal Information">
+    Complete your profile with required KYC information:
+    - Full legal name
+    - Date of birth
+    - Nationality
+    - Residential address
+    - Phone number
+
+    ```typescript
+    // Personal info form: components/auth/register/steps/info.tsx
+    // All fields are validated for:
+    // - Required field completion
+    // - Format correctness (dates, phone numbers)
+    // - Character limits
+    ```
+  </Step>
+
+  <Step title="Assets Origin">
+    Declare the origin of your assets for compliance:
+    - Select source of funds (e.g., Employment, Business, Investment)
+    - Indicate if you are a politically exposed person (PEP)
+
+    This information is required for regulatory compliance and anti-money laundering (AML) procedures.
+
+    ```typescript
+    // Assets origin form: components/auth/register/steps/assets-origin.tsx
+    export interface AssetsOriginConfirmProps {
+      assetsOrigin: string;
+      politicallyExposed: boolean;
+    }
+    ```
+  </Step>
+
+  <Step title="Upload KYC Documents">
+    Upload required identification documents:
+    - Government-issued ID (passport, driver's license, or national ID)
+    - Proof of address (utility bill, bank statement)
+    - (Optional) Additional documents as requested
+
+    ```typescript
+    // Document upload component: components/auth/register/steps/documents.tsx
+    // Supports:
+    // - Drag-and-drop file upload
+    // - Multiple file formats (PDF, JPG, PNG)
+    // - File size validation
+    ```
+
+    Once documents are uploaded, click **"Complete Registration"** to finish.
+  </Step>
+</Steps>
+
+<Warning>
+  Your KYC documents will be reviewed by our compliance team. Account approval typically takes 1-2 business days. You'll receive an email notification when your account is approved.
+</Warning>
+
+## Step 3: Login to Crocante
+
+After registration approval (or if using mock mode), log in to access the platform:
+
+1. Navigate to the Crocante login page
+2. Enter your email and password (or click "Mock Mode")
+3. Click **"Sign In"**
+
+```typescript
+// Login API endpoint: app/api/auth/login/route.ts:12
+export async function POST(req: NextRequest) {
+  // 1. Validate credentials against schema
+  const parsed = LoginRequestSchema.safeParse(body);
+  
+  // 2. Authenticate with backend
+  const loginUrl = getBackendAuthUrl(env.API_GATEWAY, env.EP_AUTH_LOGIN);
+  const res = await fetch(loginUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(parsed.data),
+  });
+  
+  // 3. Set HttpOnly session cookie
+  const response = NextResponse.json({ success: true });
+  setSessionCookie(response, token);
+  return response;
+}
+```
+
+<Info>
+  Crocante uses **HttpOnly cookies** for session management. Your session token is never exposed to client-side JavaScript, providing enhanced security against XSS attacks.
+</Info>
+
+## Step 4: Explore Your Portfolio
+
+After logging in, you'll automatically be redirected to the **Portfolio** page, which serves as your main dashboard.
+
+### Understanding the Portfolio View
+
+The portfolio page consists of three main sections:
+
+<Steps>
+  <Step title="Consolidated View Header">
+    At the top, you'll see your **Total Balance** - the sum of all assets across all custodians.
+
+    ```typescript
+    // Portfolio header: domain/portfolio/components/header.tsx:7
+    export default function Header() {
+      const { totalBalance, isLoading } = usePortfolioData();
+      
+      return (
+        <div className="flex items-center justify-between">
+          <h3>Consolidated View</h3>
+          <p className="text-2xl font-semibold">
+            {totalBalance}
+          </p>
+        </div>
+      );
+    }
+    ```
+
+    The total balance updates every **15 seconds** automatically:
+
+    ```typescript
+    // Polling interval: config/constants.ts:3
+    export const POLL_PORTFOLIO_DATA_INTERVAL = (1000 * 60 * 1) / 4; // 15 seconds
+    ```
+  </Step>
+
+  <Step title="Asset Breakdown & Allocation">
+    Below the header, you'll find two visualizations:
+
+    **Left Section - Asset Breakdown**:
+    - Total Cryptocurrencies value
+    - Total Currencies (fiat) value
+    - Total Commodities value
+    - Expandable tables showing individual tokens and currencies
+
+    **Right Section - Asset Allocation**:
+    - Pie chart showing percentage distribution
+    - Visual breakdown by asset type
+    - Interactive chart with hover details
+
+    ```typescript
+    // Portfolio layout: domain/portfolio/portfolio.tsx:8
+    return (
+      <div className="space-y-8">
+        <div className="bg-card rounded-lg p-6">
+          <Header />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <AssetBreakdown />   {/* Left section */}
+            <AssetAllocation />  {/* Right section */}
+          </div>
+        </div>
+        <TabsSection />  {/* Bottom section */}
+      </div>
+    );
+    ```
+  </Step>
+
+  <Step title="Custodian Tables (Tabs)">
+    The bottom section provides detailed views of your assets across different custodian types:
+
+    - **Banks**: Fiat currency holdings in traditional banks
+    - **Custodians**: Digital asset custody solutions
+    - **Exchanges**: Assets held on cryptocurrency exchanges
+    - **Internal Wallets**: Self-custody wallet balances
+    - **OTC Desks**: Holdings with over-the-counter trading desks
+
+    Each tab shows:
+    - Custodian name
+    - Assets held
+    - Current balance
+    - Last update timestamp
+  </Step>
+</Steps>
+
+## Step 5: Perform Your First Operation
+
+Now that you can see your portfolio, let's execute your first operation. We'll walk through making a **deposit**.
+
+### Making a Deposit
+
+<Steps>
+  <Step title="Access Deposit Modal">
+    From the portfolio page header, click the **"Deposit"** button (or use the quick action menu).
+
+    ```typescript
+    // Custom header with actions: domain/portfolio/components/custom-additional-header.tsx
+    // Provides quick access to:
+    // - Deposit
+    // - Send
+    // - Swap
+    // - Stake
+    ```
+  </Step>
+
+  <Step title="Select Token & Network">
+    In the deposit modal:
+    
+    1. **Select Token**: Choose the cryptocurrency you want to deposit (e.g., BTC, ETH, USDT)
+    2. **Select Network**: Choose the blockchain network (e.g., Bitcoin, Ethereum, Polygon)
+    3. **Select Custodian**: Choose where to deposit the funds
+
+    ```typescript
+    // Deposit modal: domain/portfolio/components/header-actions/deposit-modal.tsx
+    // Uses the deposit address hook to fetch address
+    // Source: services/hooks/use-deposit-address.ts
+    ```
+  </Step>
+
+  <Step title="Get Deposit Address">
+    After making your selections, Crocante will generate a **deposit address** and **QR code**.
+
+    - Copy the address to your clipboard
+    - Or scan the QR code with your mobile wallet
+    - Send funds from an external wallet or exchange
+
+    <Warning>
+      **Important**: Always verify the network matches your sending wallet. Sending assets on the wrong network may result in permanent loss of funds.
+    </Warning>
+  </Step>
+
+  <Step title="Confirm Transaction">
+    After sending funds:
+    
+    - Your transaction will appear in the **Activity** page
+    - Portfolio balances will update automatically (within 15 seconds)
+    - You can track transaction status and confirmations
+
+    ```typescript
+    // Activity tracking: services/hooks/use-activity.ts
+    // Polls every 5 minutes for activity updates
+    export const POLL_ACTIVITY_DATA_INTERVAL = 1000 * 60 * 5;
+    ```
+  </Step>
+</Steps>
+
+### Other Common Operations
+
+<CardGroup cols={2}>
+  <Card title="Send" icon="arrow-up">
+    Transfer assets between custodians or to external addresses
+    
+    - Select token and amount
+    - Choose source custodian
+    - Enter destination address or select internal custodian
+    - Confirm and execute
+  </Card>
+  
+  <Card title="Swap" icon="refresh">
+    Exchange one cryptocurrency for another
+    
+    - Select source token and amount
+    - Select destination token
+    - Review real-time quote
+    - Execute swap with one click
+  </Card>
+  
+  <Card title="Stake" icon="coins">
+    Earn yield on your crypto holdings
+    
+    - Navigate to Staking page
+    - Select staking type and validator
+    - Choose amount to stake
+    - Confirm staking transaction
+  </Card>
+  
+  <Card title="Request Credit" icon="landmark">
+    Borrow against your digital assets
+    
+    - Navigate to Credit page
+    - Select collateral asset
+    - Choose loan terms
+    - Submit loan request
+  </Card>
+</CardGroup>
+
+## Step 6: Explore Additional Features
+
+You're now familiar with the basics! Continue exploring Crocante:
+
+### Navigation Menu
+
+The left sidebar provides access to all platform modules:
+
+```typescript
+// Menu items configuration: components/layout/nav-bar.tsx:24
+export const MENU_ITEMS = [
+  { icon: Building2, label: "Portfolio", id: "portfolio" },
+  { icon: STAKE_ICON, label: "Staking", id: "staking" },
+  { icon: CreditCard, label: "Credit", id: "credit" },
+  { icon: Logs, label: "Activity", id: "activity" },
+];
+
+// Mock mode includes additional features:
+export const MENU_ITEMS_MOCK = [
+  /* ...core items... */
+  { icon: Lock, label: "Custody", id: "custody" },
+  { icon: Zap, label: "Invest", id: "invest" },
+  { icon: Shield, label: "Governance", id: "governance" },
+  { icon: Activity, label: "Reports", id: "reports" },
+  { icon: Cog, label: "Settings", id: "settings" },
+  { icon: FileText, label: "RFQ Manager", id: "rfq-manager" },
+];
+```
+
+### User Profile & Settings
+
+Access your user profile from the sidebar:
+- View your full name and email
+- Logout from your account
+- (Mock mode) Access settings page for preferences
+
+```typescript
+// Session management: context/session-provider.tsx:75
+export function useSession() {
+  const context = useContext(SessionContext);
+  // Provides: isSignedIn, user, isLoading, logout, setToken
+  return context;
+}
+```
+
+## Understanding Data Flow
+
+Crocante uses React Query for efficient data fetching and caching:
+
+```typescript
+// Portfolio data hook: domain/portfolio/hooks/use-portfolio-data.tsx:26
+export function usePortfolioData() {
+  const { user } = useSession();
+  const userId = user?.id.toString() || "";
+
+  const { data: portfolioData, isLoading } = usePortfolio(
+    userId,
+    POLL_PORTFOLIO_DATA_INTERVAL  // Refetch every 15 seconds
+  );
+
+  // Returns:
+  // - totalBalance, cryptocurrencies, currencies, commodities
+  // - banksData, custodiansData, exchangesData
+  // - tokensOptions, fromOptions, toOptions (for dropdowns)
+  // - isLoading state
+}
+```
+
+<Info>
+  **Performance**: React Query automatically caches data for 5 minutes and refetches in the background. This provides a fast, responsive experience while keeping data up-to-date.
+</Info>
+
+## Session Management
+
+Your session is managed automatically:
+- **Session Duration**: Configurable server-side
+- **Auto Renewal**: Sessions renew automatically in the background
+- **Expiry Warning**: You'll be notified before session expiration
+- **Auto Logout**: Automatic logout on expiry with modal notification
+
+```typescript
+// Session provider polls user data every 5 minutes: context/session-provider.tsx:28
+const { data: user, isLoading, isError } = useUser(
+  POLL_USER_DATA_INTERVAL  // 5 minutes
+);
+
+// Session expiry listener: context/auth-expired-listener.tsx
+// Displays modal when session expires
+```
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Portfolio not loading">
+    - Check your internet connection
+    - Verify you're logged in (check session status)
+    - Try refreshing the page (Cmd/Ctrl + R)
+    - Clear browser cache and cookies if issues persist
+  </Accordion>
+
+  <Accordion title="Deposit address not generating">
+    - Ensure you've selected both token and network
+    - Verify the custodian supports the selected network
+    - Check browser console for errors (F12)
+    - Contact support if the issue persists
+  </Accordion>
+
+  <Accordion title="Session keeps expiring">
+    - This may indicate network issues preventing session renewal
+    - Check your firewall/VPN settings
+    - Ensure cookies are enabled in your browser
+    - Try a different browser or incognito mode
+  </Accordion>
+
+  <Accordion title="Mock mode not working">
+    - Clear browser localStorage
+    - Ensure you clicked "Continue with Mock Data" not "Login"
+    - Check browser console for errors
+    - Try hard refresh (Cmd/Ctrl + Shift + R)
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Deep Dive" icon="sitemap" href="/architecture">
+    Learn about Crocante's technical architecture, design patterns, and code structure
+  </Card>
+  
+  <Card title="Portfolio API" icon="wallet" href="/api/portfolio/net-worth">
+    Explore portfolio endpoints and asset management APIs
+  </Card>
+  
+  <Card title="Component Library" icon="cube" href="/components/overview">
+    Browse reusable UI components and their usage examples
+  </Card>
+  
+  <Card title="User Guides" icon="book" href="/guides/authentication">
+    Learn how to use platform features and manage your assets
+  </Card>
+</CardGroup>
+
+<Tip>
+  **Best Practice**: Start with small transactions in mock mode to familiarize yourself with the platform before managing real assets. This helps you understand the workflow without risk.
+</Tip>
+
+## Getting Help
+
+Need assistance?
+
+- **Documentation**: Browse our comprehensive docs for detailed guides
+- **Support**: Contact support@crocante.com for technical assistance
+- **Community**: Join our community forum to connect with other users
+- **Enterprise**: Institutional clients have access to dedicated support channels
+
+Welcome to Crocante! You're now ready to manage your digital assets with confidence.

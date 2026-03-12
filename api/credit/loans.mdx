@@ -1,0 +1,606 @@
+---
+title: "Loans"
+description: "Create and manage loans with collateralized borrowing"
+---
+
+## Create Loan
+
+<CodeGroup>
+```typescript POST /loan
+import { usePostLoan } from '@/services/hooks/mutations/use-post-loan';
+
+const { mutate: createLoan } = usePostLoan();
+
+createLoan({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  ratio: '1.5',
+  size: '1',
+  typeId: 'ETH_USDT'
+});
+```
+</CodeGroup>
+
+Create a new collateralized loan. The loan is immediately active upon creation and begins accruing interest based on the collateral ratio tier.
+
+### Request Body
+
+<ParamField body="ratio" type="string" required>
+  Target collateral ratio for the loan. Must meet the minimum collateral ratio requirements for the loan type. Higher ratios result in lower APR rates based on tier structure.
+  
+  Example: `"1.5"` for 150% collateralization
+</ParamField>
+
+<ParamField body="size" type="string" required>
+  The loan amount in the size currency (e.g., USDT). Must be within the loan type's min/max size limits.
+  
+  Example: `"1"` for 1 USDT
+</ParamField>
+
+<ParamField body="typeId" type="string" required>
+  The loan type identifier specifying the collateral and size currencies.
+  
+  Available types: `ETH_USDT`, `BTC_USDT`
+</ParamField>
+
+### Response
+
+<ResponseField name="typeId" type="string">
+  The loan type identifier (e.g., `ETH_USDT`)
+</ResponseField>
+
+<ResponseField name="operation" type="object">
+  <ResponseField name="id" type="string">
+    Unique identifier for this loan operation
+  </ResponseField>
+  
+  <ResponseField name="creatorId" type="string">
+    User ID who created the loan
+  </ResponseField>
+  
+  <ResponseField name="ownerId" type="string">
+    Current owner of the loan
+  </ResponseField>
+  
+  <ResponseField name="openedAt" type="string">
+    Timestamp when the loan was opened (ISO 8601)
+  </ResponseField>
+  
+  <ResponseField name="updatedAt" type="string">
+    Timestamp of the last update (ISO 8601)
+  </ResponseField>
+  
+  <ResponseField name="closedAt" type="string | null">
+    Timestamp when the loan was closed, or null if still active
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Current operation status: `ACTIVE`, `COMPLETED`
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    Operation type: `LOAN`
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="sizeCurrencyId" type="string">
+  Currency of the loan amount (e.g., `USDT`)
+</ResponseField>
+
+<ResponseField name="collatCurrencyId" type="string">
+  Currency of the collateral (e.g., `ETH`, `BTC`)
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Loan status: `ACTIVE`, `REPAYED`, `LIQUIDATED`
+</ResponseField>
+
+<ResponseField name="size" type="string">
+  Original loan amount in size currency
+</ResponseField>
+
+<ResponseField name="collat" type="string">
+  Current collateral amount in collateral currency
+</ResponseField>
+
+<ResponseField name="repayed" type="string">
+  Total amount repaid so far
+</ResponseField>
+
+<ResponseField name="debt" type="string">
+  Current outstanding debt including interest
+</ResponseField>
+
+<ResponseField name="interest" type="string">
+  Accrued interest amount
+</ResponseField>
+
+<ResponseField name="ratio" type="string">
+  Current collateral ratio (collateral value / debt)
+  
+  Example: `"1.4999964170901844"` represents ~150% collateralization
+</ResponseField>
+
+<ResponseField name="liqPrice" type="string">
+  Liquidation price - the collateral price at which the loan will be liquidated
+</ResponseField>
+
+<ResponseField name="apr" type="string">
+  Current annual percentage rate based on the active tier
+  
+  Example: `"0.135"` represents 13.5% APR
+</ResponseField>
+
+<ResponseField name="tierNum" type="number">
+  Current tier index (0-based) determining the APR
+</ResponseField>
+
+<ResponseField name="minCollat" type="string">
+  Minimum collateral required to maintain the loan
+</ResponseField>
+
+<ResponseField name="initialAPR" type="string">
+  APR at loan creation
+</ResponseField>
+
+<ResponseField name="initialRatio" type="string">
+  Collateral ratio at loan creation
+</ResponseField>
+
+<ResponseField name="initialSize" type="string">
+  Original loan size
+</ResponseField>
+
+<ResponseField name="initialCollat" type="string">
+  Initial collateral amount
+</ResponseField>
+
+<ResponseField name="initialDebt" type="string">
+  Initial debt including origination fee
+</ResponseField>
+
+<ResponseField name="origFee" type="string">
+  Origination fee charged at loan creation
+</ResponseField>
+
+<ResponseField name="tiers" type="array">
+  APR tier structure based on collateral ratio
+  
+  <ResponseField name="minRatio" type="string">
+    Minimum ratio required for this tier
+  </ResponseField>
+  
+  <ResponseField name="minPrice" type="string">
+    Minimum collateral price for this tier
+  </ResponseField>
+  
+  <ResponseField name="apr" type="string">
+    APR for this tier
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="lastUpdate" type="object">
+  Details of the most recent loan event
+  
+  <ResponseField name="createdAt" type="string">
+    Timestamp of the event
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    Event type: `CREATE`, `ADD_COLLAT`, `REM_COLLAT`, `REPAY`, `LIQUIDATE`
+  </ResponseField>
+  
+  <ResponseField name="status" type="string">
+    Loan status after this event
+  </ResponseField>
+  
+  <ResponseField name="apr" type="string">
+    APR at the time of the event
+  </ResponseField>
+  
+  <ResponseField name="dCollat" type="string">
+    Change in collateral amount (delta)
+  </ResponseField>
+  
+  <ResponseField name="dRepayed" type="string">
+    Change in repaid amount (delta)
+  </ResponseField>
+  
+  <ResponseField name="liqCollat" type="string">
+    Amount of collateral liquidated (if applicable)
+  </ResponseField>
+  
+  <ResponseField name="price" type="string">
+    Collateral price at the time of the event
+  </ResponseField>
+  
+  <ResponseField name="dFees" type="string">
+    Fees charged for this event
+  </ResponseField>
+  
+  <ResponseField name="dTierNum" type="number">
+    Change in tier number (delta)
+  </ResponseField>
+  
+  <ResponseField name="forcedLiq" type="boolean">
+    Whether this was a forced liquidation
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="forcedLiq" type="boolean">
+  Whether the loan is subject to forced liquidation
+</ResponseField>
+
+### Response Example
+
+```json
+{
+  "typeId": "ETH_USDT",
+  "operation": {
+    "id": "2c7ce71e-8dc8-4dd2-97e1-3d9716a1874d",
+    "creatorId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+    "ownerId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+    "openedAt": "2026-01-29T14:44:45.257241494Z",
+    "updatedAt": "2026-01-29T14:44:45.257241494Z",
+    "closedAt": null,
+    "status": "ACTIVE",
+    "type": "LOAN"
+  },
+  "sizeCurrencyId": "USDT",
+  "collatCurrencyId": "ETH",
+  "status": "ACTIVE",
+  "size": "1",
+  "collat": "0.00051709",
+  "repayed": "0",
+  "debt": "1.01",
+  "interest": "0",
+  "ratio": "1.4999964170901844",
+  "liqPrice": "2328.8015625906515307",
+  "apr": "0.135",
+  "tierNum": 0,
+  "minCollat": "0.0005170912351275",
+  "initialAPR": "0.135",
+  "initialRatio": "1.4999964170901844",
+  "initialSize": "1",
+  "initialCollat": "0.00051709",
+  "initialDebt": "1.0035",
+  "origFee": "0.0035",
+  "tiers": [
+    {
+      "minRatio": "1.2",
+      "minPrice": "2328.8015625906515307",
+      "apr": "0.135"
+    },
+    {
+      "minRatio": "1.5",
+      "minPrice": "2911.0019532383144134",
+      "apr": "0.0975"
+    },
+    {
+      "minRatio": "2",
+      "minPrice": "3881.3359376510858845",
+      "apr": "0.05"
+    }
+  ],
+  "lastUpdate": {
+    "createdAt": "2026-01-29T14:44:45.257241494Z",
+    "type": "CREATE",
+    "status": "ACTIVE",
+    "apr": "0.135",
+    "dCollat": "0.00051709",
+    "dRepayed": "0",
+    "liqCollat": "0",
+    "price": "2910.995",
+    "dFees": "0.0035",
+    "dTierNum": 0,
+    "forcedLiq": false
+  },
+  "forcedLiq": false
+}
+```
+
+---
+
+## Repay Loan
+
+<CodeGroup>
+```typescript POST /loan/{opId}/repay
+import { usePostLoanManager } from '@/services/hooks/mutations/use-post-loan-manager';
+
+const { mutate: repayLoan } = usePostLoanManager('repay');
+
+repayLoan({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  opId: '2c7ce71e-8dc8-4dd2-97e1-3d9716a1874d',
+  amount: '1.992138092931196373'
+});
+```
+</CodeGroup>
+
+Repay part or all of an active loan. When the debt is fully repaid, the loan status changes to `REPAYED` and remaining collateral is returned to the user.
+
+### Path Parameters
+
+<ParamField path="opId" type="string" required>
+  The loan operation ID to repay
+</ParamField>
+
+### Request Body
+
+<ParamField body="amount" type="string" required>
+  The amount to repay in the size currency. Can be partial or full repayment.
+  
+  Example: `"1.992138092931196373"` to repay 1.99 USDT
+</ParamField>
+
+### Response
+
+Returns the updated loan object with the same structure as the Create Loan response. The `repayed` field will be updated, and `debt` will be reduced accordingly.
+
+---
+
+## Liquidate Loan
+
+<CodeGroup>
+```typescript POST /loan/{opId}/liquidate
+import { usePostLoanManager } from '@/services/hooks/mutations/use-post-loan-manager';
+
+const { mutate: liquidateLoan } = usePostLoanManager('liquidate');
+
+liquidateLoan({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  opId: 'edaa7bd5-00d6-40b6-8b27-f21e3b06c561',
+  amount: '10.085159966953139616'
+});
+```
+</CodeGroup>
+
+Liquidate collateral to repay part of the loan. This sells collateral at current market price to reduce debt, useful when you want to maintain your loan position while reducing risk.
+
+### Path Parameters
+
+<ParamField path="opId" type="string" required>
+  The loan operation ID to liquidate
+</ParamField>
+
+### Request Body
+
+<ParamField body="amount" type="string" required>
+  The amount of debt to repay through liquidation (in size currency). The system will liquidate enough collateral at current market price to cover this amount plus liquidation fees.
+  
+  Example: `"10.085159966953139616"` to liquidate collateral worth ~10 USDT
+</ParamField>
+
+### Response
+
+Returns the updated loan object. The `lastUpdate.type` will be `REPAY_COLLAT` and will include:
+- `liqCollat`: Amount of collateral liquidated
+- `liqCollatValue`: Value of liquidated collateral in size currency
+- `price`: Execution price
+- `fee`: Liquidation fee charged
+
+---
+
+## Get Loan History
+
+<CodeGroup>
+```typescript GET /loan/{opId}/history
+import { useLoanHistoryEvents } from '@/services/hooks/use-loan-history-events';
+
+const { data: historyEvents } = useLoanHistoryEvents({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  opId: '389ae85b-7968-4086-b7e3-2b53dc4fe6ed',
+  enabled: true
+});
+```
+</CodeGroup>
+
+Retrieve the complete history of events for a loan, including collateral changes, repayments, APR updates, and liquidations.
+
+### Path Parameters
+
+<ParamField path="opId" type="string" required>
+  The loan operation ID to retrieve history for
+</ParamField>
+
+### Response
+
+<ResponseField name="events" type="array">
+  Array of loan history events in chronological order
+  
+  <ResponseField name="createdAt" type="string">
+    Timestamp when the event occurred (ISO 8601)
+  </ResponseField>
+  
+  <ResponseField name="type" type="string">
+    Event type:
+    - `ADD_COLLAT`: Collateral was added
+    - `REM_COLLAT`: Collateral was removed
+    - `REPAY_SIZE`: Loan repayment in size currency
+    - `REPAY_COLLAT`: Debt repaid via collateral liquidation
+    - `UPDATE_APR`: APR tier changed due to ratio change
+  </ResponseField>
+  
+  <ResponseField name="data" type="object">
+    Event-specific data fields
+    
+    <ResponseField name="currencyId" type="string" optional>
+      Currency involved in the event (for ADD_COLLAT, REM_COLLAT, REPAY_SIZE)
+    </ResponseField>
+    
+    <ResponseField name="amount" type="string" optional>
+      Amount of currency involved
+    </ResponseField>
+    
+    <ResponseField name="liqCollat" type="string" optional>
+      Amount of collateral liquidated (for REPAY_COLLAT)
+    </ResponseField>
+    
+    <ResponseField name="liqCollatValue" type="string" optional>
+      Value of liquidated collateral in size currency
+    </ResponseField>
+    
+    <ResponseField name="repayed" type="string" optional>
+      Amount repaid from liquidation
+    </ResponseField>
+    
+    <ResponseField name="price" type="string" optional>
+      Execution price for liquidation
+    </ResponseField>
+    
+    <ResponseField name="fee" type="string" optional>
+      Fee charged for the liquidation
+    </ResponseField>
+    
+    <ResponseField name="apr" type="string" optional>
+      New APR value (for UPDATE_APR events)
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+### Response Example
+
+```json
+[
+  {
+    "createdAt": "2025-12-09T20:13:57.572519Z",
+    "type": "ADD_COLLAT",
+    "data": {
+      "currencyId": "ETH",
+      "amount": "0.03122094"
+    }
+  },
+  {
+    "createdAt": "2025-12-09T20:14:40.951945Z",
+    "type": "REM_COLLAT",
+    "data": {
+      "currencyId": "ETH",
+      "amount": "0.04018674"
+    }
+  },
+  {
+    "createdAt": "2025-12-09T20:14:40.951945Z",
+    "type": "UPDATE_APR",
+    "data": {
+      "apr": "0.135"
+    }
+  },
+  {
+    "createdAt": "2025-12-09T20:15:21.621333Z",
+    "type": "REPAY_COLLAT",
+    "data": {
+      "liqCollat": "0.003006609357741528",
+      "liqCollatValue": "10.08515996695313961624",
+      "repayed": "10.085159966953139616",
+      "price": "3354.33",
+      "fee": "0.035298059884335989"
+    }
+  },
+  {
+    "createdAt": "2025-12-09T20:15:28.584195Z",
+    "type": "REPAY_SIZE",
+    "data": {
+      "currencyId": "USDT",
+      "amount": "1.992138092931196373"
+    }
+  },
+  {
+    "createdAt": "2025-12-09T20:15:28.584195Z",
+    "type": "REM_COLLAT",
+    "data": {
+      "currencyId": "ETH",
+      "amount": "0.002379720642258472"
+    }
+  }
+]
+```
+
+---
+
+## TypeScript Types
+
+```typescript
+// Loan creation request
+interface CreateLoanRequest {
+  userId: string;
+  ratio: string;     // Target collateral ratio
+  size: string;      // Loan amount
+  typeId: string;    // Loan type (e.g., "ETH_USDT")
+}
+
+// Loan management request (add/remove collateral, repay, liquidate)
+interface LoanManagerRequest {
+  userId: string;
+  opId: string;      // Loan operation ID
+  amount: string;    // Amount for the operation
+}
+
+// Loan response structure
+interface Loan {
+  typeId: string;
+  operation: {
+    id: string;
+    creatorId: string;
+    ownerId: string;
+    openedAt: string;
+    updatedAt: string;
+    closedAt: string | null;
+    status: 'ACTIVE' | 'COMPLETED';
+    type: string;
+    fullType: string;
+  };
+  sizeCurrencyId: string;
+  collatCurrencyId: string;
+  status: 'ACTIVE' | 'REPAYED' | 'LIQUIDATED';
+  size: string;
+  collat: string;
+  repayed: string;
+  debt: string;
+  interest: string;
+  ratio: string;
+  liqPrice: string;
+  apr: string;
+  tierNum: number;
+  minCollat: string;
+  initialAPR: string;
+  initialRatio: string;
+  initialSize: string;
+  initialCollat: string;
+  initialDebt: string;
+  origFee: string;
+  tiers: Array<{
+    minRatio: string;
+    minPrice: string;
+    apr: string;
+  }>;
+  lastUpdate: {
+    createdAt: string;
+    type: 'CREATE' | 'ADD_COLLAT' | 'REM_COLLAT' | 'REPAY' | 'LIQUIDATE';
+    status: string;
+    apr: string;
+    dCollat: string;
+    dRepayed: string;
+    liqCollat: string;
+    price: string;
+    dFees: string;
+    dTierNum: number;
+    forcedLiq: boolean;
+  };
+  forcedLiq: boolean;
+}
+
+// Loan history event
+interface LoanHistoryEvent {
+  createdAt: string;
+  type: 'ADD_COLLAT' | 'REM_COLLAT' | 'REPAY_SIZE' | 'REPAY_COLLAT' | 'UPDATE_APR';
+  data: {
+    currencyId?: string;
+    amount?: string;
+    liqCollat?: string;
+    liqCollatValue?: string;
+    repayed?: string;
+    price?: string;
+    fee?: string;
+    apr?: string;
+  };
+}
+```

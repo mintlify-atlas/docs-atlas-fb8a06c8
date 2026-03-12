@@ -1,0 +1,338 @@
+---
+title: 'Get Token Statement'
+description: 'Retrieve detailed statement information for a specific token'
+api: 'GET {EP_STATEMENT_AVAILABLE_TOKEN}'
+---
+
+Retrieve detailed statement information for a specific cryptocurrency or token. This endpoint provides the available balance, current price, and estimated value for an individual token.
+
+## Endpoint Pattern
+
+The endpoint URL includes a token parameter:
+
+```
+{EP_STATEMENT_AVAILABLE_TOKEN}
+```
+
+The `%TOKEN` placeholder in the endpoint URL is replaced with the specific token symbol (e.g., `BTC`, `ETH`, `USDT`).
+
+## Path Parameters
+
+<ParamField path="token" type="string" required>
+  The token symbol to retrieve statement for
+  
+  Examples: `"BTC"`, `"ETH"`, `"USDT"`, `"SOL"`
+</ParamField>
+
+## Polling Configuration
+
+This endpoint supports automatic polling for real-time balance updates:
+
+- **Stale Time**: 5 minutes (300,000ms)
+- **Default Poll Interval**: Configurable via `pollIntervalMs` parameter
+- **Background Polling**: Enabled when `pollIntervalMs > 0`
+
+## Authentication
+
+Requires valid session authentication. The endpoint automatically includes credentials from the active session.
+
+## Response
+
+The response contains detailed information about the specified token's available balance and valuation.
+
+<ResponseField name="data" type="object" required>
+  Token statement data
+  
+  <Expandable title="Available Token Data">
+    <ResponseField name="currency" type="Currency" required>
+      The cryptocurrency or token details
+      
+      <Expandable title="Currency">
+        <ResponseField name="id" type="string" required>
+          Currency symbol
+          
+          Example: `"BTC"`
+        </ResponseField>
+        
+        <ResponseField name="name" type="string" required>
+          Full currency name
+          
+          Example: `"Bitcoin"`
+        </ResponseField>
+        
+        <ResponseField name="decimals" type="number" required>
+          Number of decimal places for precision
+          
+          Example: `8`
+        </ResponseField>
+        
+        <ResponseField name="allowTransfers" type="boolean" required>
+          Whether transfers are allowed for this currency
+        </ResponseField>
+        
+        <ResponseField name="disabled" type="boolean" required>
+          Whether the currency is currently disabled
+        </ResponseField>
+        
+        <ResponseField name="priority" type="number" required>
+          Display priority (0-3, higher is more prominent)
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="quoteCurrency" type="Currency" required>
+      The quote currency for pricing (typically USDT)
+    </ResponseField>
+    
+    <ResponseField name="amount" type="string" required>
+      Available amount of the token
+      
+      Example: `"0.0083506"`
+    </ResponseField>
+    
+    <ResponseField name="estPrice" type="string" required>
+      Estimated price per unit in quote currency
+      
+      Example: `"91141.05"`
+    </ResponseField>
+    
+    <ResponseField name="estValue" type="string" required>
+      Estimated total value (amount × price) in quote currency
+      
+      Example: `"761.08"`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code
+  
+  Example: `200`
+</ResponseField>
+
+## Example Request
+
+```bash
+# Get Bitcoin statement
+GET {EP_STATEMENT_AVAILABLE_TOKEN}/BTC
+
+# Get Ethereum statement  
+GET {EP_STATEMENT_AVAILABLE_TOKEN}/ETH
+
+# Get USDT statement
+GET {EP_STATEMENT_AVAILABLE_TOKEN}/USDT
+```
+
+## Example Response
+
+### Bitcoin (BTC) Statement
+
+```json
+{
+  "data": {
+    "currency": {
+      "id": "BTC",
+      "name": "Bitcoin",
+      "decimals": 8,
+      "allowTransfers": true,
+      "disabled": false,
+      "priority": 3
+    },
+    "quoteCurrency": {
+      "id": "USDT",
+      "name": "Tether",
+      "decimals": 2,
+      "allowTransfers": true,
+      "disabled": false,
+      "priority": 3
+    },
+    "amount": "0.0083506",
+    "estPrice": "91141.05",
+    "estValue": "761.08"
+  },
+  "status": 200
+}
+```
+
+### Ethereum (ETH) Statement
+
+```json
+{
+  "data": {
+    "currency": {
+      "id": "ETH",
+      "name": "Ethereum",
+      "decimals": 8,
+      "allowTransfers": true,
+      "disabled": false,
+      "priority": 2
+    },
+    "quoteCurrency": {
+      "id": "USDT",
+      "name": "Tether",
+      "decimals": 2,
+      "allowTransfers": true,
+      "disabled": false,
+      "priority": 3
+    },
+    "amount": "0.04256646",
+    "estPrice": "3143.105",
+    "estValue": "133.79"
+  },
+  "status": 200
+}
+```
+
+## TypeScript Types
+
+```typescript
+import { z } from "zod";
+import { AvailableTokenDataSchema } from "./availables-data";
+
+export type AvailableTokenData = z.infer<typeof AvailableTokenDataSchema>;
+
+export const availableTokenDataResponseSchema = z.object({
+  data: AvailableTokenDataSchema,
+  status: z.number(),
+});
+
+export type AvailableTokenDataResponse = z.infer<
+  typeof availableTokenDataResponseSchema
+>;
+
+// Formatted UI type
+export type AvailablesDataItemUI = {
+  id: string;
+  name: string;
+  amount: string;
+  value: string;
+};
+```
+
+## Usage Example
+
+```typescript
+import { useAvailableToken } from '@/services/hooks/use-available-token';
+
+function TokenStatementComponent({ tokenSymbol }: { tokenSymbol: string }) {
+  const userId = "user-123";
+  const pollInterval = 30000; // Poll every 30 seconds
+  
+  const { data: tokenData, isLoading, error } = useAvailableToken(
+    userId,
+    tokenSymbol,
+    pollInterval
+  );
+  
+  if (isLoading) return <div>Loading {tokenSymbol} balance...</div>;
+  if (error) return <div>Error loading {tokenSymbol} balance</div>;
+  
+  return (
+    <div>
+      <h1>{tokenData?.name} Statement</h1>
+      <p>Symbol: {tokenData?.id}</p>
+      <p>Amount: {tokenData?.amount}</p>
+      <p>Value: ${tokenData?.value}</p>
+    </div>
+  );
+}
+
+// Usage
+<TokenStatementComponent tokenSymbol="BTC" />
+<TokenStatementComponent tokenSymbol="ETH" />
+```
+
+## Data Formatting
+
+The hook automatically formats the raw API response into a simplified UI structure:
+
+```typescript
+// Raw API response is transformed to:
+{
+  id: "BTC",           // currency.id
+  name: "Bitcoin",     // currency.name
+  amount: "0.0083506", // amount
+  value: "761.08"      // estValue
+}
+```
+
+## Error Handling
+
+The endpoint handles various error scenarios:
+
+### Token Not Found
+
+If the specified token doesn't exist in the available tokens list, the endpoint will throw an error:
+
+```typescript
+Error: Available token not found for token: INVALID
+```
+
+### Fallback to Mock Data
+
+The endpoint gracefully falls back to mock data when:
+- Network requests fail
+- Authentication is invalid
+- The session mode is set to "mock"
+
+## Common Use Cases
+
+### Display Single Token Balance
+
+```typescript
+function BitcoinBalance() {
+  const { data } = useAvailableToken(userId, "BTC", 30000);
+  return <div>BTC Balance: {data?.amount}</div>;
+}
+```
+
+### Compare Multiple Tokens
+
+```typescript
+function TokenComparison() {
+  const { data: btc } = useAvailableToken(userId, "BTC", 30000);
+  const { data: eth } = useAvailableToken(userId, "ETH", 30000);
+  
+  return (
+    <div>
+      <h2>Portfolio Comparison</h2>
+      <p>BTC Value: ${btc?.value}</p>
+      <p>ETH Value: ${eth?.value}</p>
+    </div>
+  );
+}
+```
+
+### Watch for Balance Changes
+
+```typescript
+import { useEffect } from 'react';
+
+function BalanceMonitor({ token }: { token: string }) {
+  const { data } = useAvailableToken(userId, token, 5000); // Poll every 5s
+  
+  useEffect(() => {
+    if (data) {
+      console.log(`${token} balance updated:`, data.amount);
+      // Trigger notifications or alerts based on balance changes
+    }
+  }, [data, token]);
+  
+  return <div>{token}: {data?.amount}</div>;
+}
+```
+
+## Supported Tokens
+
+The endpoint supports all tokens available in the platform, including but not limited to:
+
+- **Major Cryptocurrencies**: BTC, ETH, SOL, ADA, DOT, AVAX
+- **Stablecoins**: USDT, USDC, DAI
+- **Altcoins**: LINK, UNI, AAVE, POL, LTC, TRX, XRP
+- **Gaming/Metaverse**: SAND, MANA, CHZ
+- **Layer 1/2 Tokens**: S (Sonic)
+
+## Related Endpoints
+
+- [Get Net Worth](/api/portfolio/net-worth) - Get complete portfolio with all assets and liabilities
+- [Get Available Tokens](/api/portfolio/availables) - Get list of all available token balances

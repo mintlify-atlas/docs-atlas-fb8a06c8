@@ -1,122 +1,124 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Crocante Financial Platform",
+  "theme": "linden",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#7c7c7c",
+    "light": "#c4c4c4",
+    "dark": "#070707"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/86ecbf31-4bee-426a-a198-fa97a033396c.png",
+  "logo": {
+    "light": "https://media.brand.dev/1f1e4836-c9b0-4d21-a221-1411146261a9.svg",
+    "dark": "https://media.brand.dev/862e10d4-beb2-49d1-91ee-e52387c286bd.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Crocantefinancial/crocante-pitch-frontend"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Crocantefinancial/crocante-pitch-frontend"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "architecture"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/portfolio",
+              "features/staking",
+              "features/credit",
+              "features/activity",
+              "features/custody",
+              "features/governance"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "User Guide",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/authentication",
+              "guides/managing-assets",
+              "guides/token-conversion",
+              "guides/deposit-withdrawal"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Components",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "components/overview",
+              "components/ui-components",
+              "components/hooks",
+              "components/context"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Authentication",
             "pages": [
-              "api-reference/introduction"
+              "api/auth/login",
+              "api/auth/logout",
+              "api/auth/session"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Portfolio",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/portfolio/net-worth",
+              "api/portfolio/availables",
+              "api/portfolio/statements"
+            ]
+          },
+          {
+            "group": "Trading",
+            "pages": [
+              "api/trading/conversion",
+              "api/trading/quotes",
+              "api/trading/pairs"
+            ]
+          },
+          {
+            "group": "Staking",
+            "pages": [
+              "api/staking/overview",
+              "api/staking/types",
+              "api/staking/operations"
+            ]
+          },
+          {
+            "group": "Credit",
+            "pages": [
+              "api/credit/loans",
+              "api/credit/collateral",
+              "api/credit/types"
+            ]
+          },
+          {
+            "group": "Activity",
+            "pages": [
+              "api/activity/transactions",
+              "api/activity/filters"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

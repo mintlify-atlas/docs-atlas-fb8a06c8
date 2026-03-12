@@ -1,0 +1,522 @@
+---
+title: 'Custom Hooks'
+description: 'Reusable React hooks for the Crocante platform'
+---
+
+## Overview
+
+Crocante provides a collection of custom React hooks for common functionality. These hooks encapsulate complex logic and make it reusable across components.
+
+## useModal
+
+Manage modal open/close state with lifecycle callbacks.
+
+### Signature
+
+```typescript
+interface UseModalOptions {
+  onOpen?: () => void;
+  onClose?: () => void;
+  onClosePrevious?: () => void;
+  onOpenPrevious?: () => void;
+}
+
+function useModal(
+  initial?: boolean, 
+  opts?: UseModalOptions
+): {
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+  toggle: (next?: boolean) => void;
+  setIsOpen: (value: boolean) => void;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Usage
+import { useModal } from "@/hooks/use-modal";
+import { Modal, Button } from "@/components";
+
+function TransferModal() {
+  const { isOpen, open, close } = useModal();
+
+  return (
+    <>
+      <Button onClick={open}>Open Transfer</Button>
+      <Modal title="Transfer" open={isOpen} onClose={close}>
+        <p>Transfer content here</p>
+      </Modal>
+    </>
+  );
+}
+```
+
+```tsx With Lifecycle Callbacks
+const { isOpen, open, close } = useModal(false, {
+  onOpen: () => {
+    console.log("Modal opened");
+    trackEvent("modal_open");
+  },
+  onClose: () => {
+    console.log("Modal closed");
+    resetForm();
+  },
+  onClosePrevious: () => {
+    // Called before modal closes
+    saveFormDraft();
+  }
+});
+```
+
+```tsx Toggle State
+const { isOpen, toggle } = useModal();
+
+<Button onClick={() => toggle()}>
+  {isOpen ? "Close" : "Open"}
+</Button>
+```
+</CodeGroup>
+
+### Features
+
+- **Lifecycle Callbacks**: Execute code on open/close
+- **Toggle Function**: Toggle state programmatically
+- **Initial State**: Set initial open state
+- **Previous Callbacks**: Execute before state change
+
+## useSessionExpiry
+
+Handle session expiration warnings and renewal.
+
+### Signature
+
+```typescript
+function useSessionExpiry(isSignedIn: boolean): {
+  isExpiryModalOpen: boolean;
+  expiresAtForModal: number | null;
+  onRenew: () => Promise<void>;
+  isRenewing: boolean;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Session Expiry Management
+import { useSessionExpiry } from "@/hooks/use-session-expiry";
+import { useSession } from "@/context/session-provider";
+
+function SessionExpiryModal() {
+  const { isSignedIn } = useSession();
+  const { 
+    isExpiryModalOpen, 
+    expiresAtForModal, 
+    onRenew, 
+    isRenewing 
+  } = useSessionExpiry(isSignedIn);
+
+  if (!isExpiryModalOpen) return null;
+
+  const timeRemaining = expiresAtForModal 
+    ? Math.max(0, expiresAtForModal - Date.now()) 
+    : 0;
+
+  return (
+    <Modal 
+      title="Session Expiring" 
+      open={isExpiryModalOpen}
+      blockClose={true}
+    >
+      <p>Your session will expire in {timeRemaining}ms</p>
+      <Button 
+        onClick={onRenew} 
+        isLoading={isRenewing}
+      >
+        Renew Session
+      </Button>
+    </Modal>
+  );
+}
+```
+</CodeGroup>
+
+### Features
+
+- **Automatic Warning**: Shows modal before session expires
+- **Countdown**: Tracks time until expiration
+- **Renewal**: Extends session via API call
+- **Auto-trigger Auth**: Opens login modal on expiration
+
+## useTokenConversion
+
+Convert token amounts to/from USD with real-time rates.
+
+### Signature
+
+```typescript
+function useTokenConversion(
+  userId: string, 
+  token: string
+): {
+  convertToUSD: (value: string) => string;
+  convertFromUSD: (usdValue: string) => string;
+  conversionRate: number;
+  isLoading: boolean;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Token to USD Conversion
+import { useTokenConversion } from "@/hooks/use-token-conversion";
+import { useSession } from "@/context/session-provider";
+
+function TokenBalance({ token, amount }: { token: string; amount: string }) {
+  const { user } = useSession();
+  const { convertToUSD, conversionRate, isLoading } = useTokenConversion(
+    user?.id || "",
+    token
+  );
+
+  const usdValue = convertToUSD(amount);
+
+  return (
+    <div>
+      <p>{amount} {token}</p>
+      <p className="text-muted">
+        {isLoading ? "Loading..." : `$${usdValue}`}
+      </p>
+      <p className="text-xs">Rate: ${conversionRate}</p>
+    </div>
+  );
+}
+```
+
+```tsx Bidirectional Conversion
+const { convertToUSD, convertFromUSD } = useTokenConversion(
+  userId,
+  "BTC"
+);
+
+// Convert 1 BTC to USD
+const usdAmount = convertToUSD("1"); // "95000.00"
+
+// Convert $95000 to BTC
+const btcAmount = convertFromUSD("95000"); // "1.00"
+```
+</CodeGroup>
+
+### Features
+
+- **Real-time Rates**: Polls conversion rates at intervals
+- **Bidirectional**: Convert to and from USD
+- **Formatting**: Automatic decimal precision
+- **Error Handling**: Returns "0" for invalid inputs
+
+## useTokenSwap
+
+Calculate token swap conversions with fees.
+
+### Signature
+
+```typescript
+function useTokenSwap(
+  userId: string,
+  tokenFrom: string,
+  tokenTo: string,
+  isLoading: boolean
+): {
+  convertTo: (valueFrom: string) => string;
+  convertFrom: (valueTo: string) => string;
+  conversionRateFrom: number;
+  commissionRate: number;
+  minAmount: string;
+  isLoading: boolean;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Swap Calculator
+import { useTokenSwap } from "@/hooks/use-token-swap";
+
+function SwapForm() {
+  const { user } = useSession();
+  const [fromAmount, setFromAmount] = useState("");
+  const [fromToken, setFromToken] = useState("BTC");
+  const [toToken, setToToken] = useState("ETH");
+  
+  const { 
+    convertTo, 
+    conversionRateFrom, 
+    commissionRate,
+    minAmount 
+  } = useTokenSwap(
+    user?.id || "",
+    fromToken,
+    toToken,
+    false
+  );
+
+  const toAmount = convertTo(fromAmount);
+
+  return (
+    <div>
+      <Input 
+        label="From"
+        value={fromAmount}
+        onChange={(e) => setFromAmount(e.target.value)}
+      />
+      <p>You will receive: {toAmount} {toToken}</p>
+      <p>Rate: {conversionRateFrom}</p>
+      <p>Fee: {commissionRate}%</p>
+      <p>Min: {minAmount} {toToken}</p>
+    </div>
+  );
+}
+```
+</CodeGroup>
+
+### Features
+
+- **Live Quotes**: Real-time swap rates
+- **Commission Info**: Fee percentages
+- **Minimum Amount**: Enforced swap minimums
+- **Bidirectional**: Calculate both directions
+
+## useSelector
+
+Manage select dropdown state with change callbacks.
+
+### Signature
+
+```typescript
+interface SelectorOptions<T> {
+  [key: string]: T;
+}
+
+function useSelector<T>(
+  options: SelectorOptions<T>,
+  defaultIndex?: number,
+  opts?: {
+    onReset?: () => void;
+    onChange?: () => void;
+    onChangeReactive?: (selectedRow: T) => void;
+  }
+): {
+  selectedRow: T;
+  selectedIndex: number;
+  getNextRow: () => T;
+  change: (key: string | React.ChangeEvent<HTMLSelectElement>) => void;
+  reset: () => void;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Token Selector
+import { useSelector } from "@/hooks/use-selector";
+import { Select } from "@/components";
+
+function TokenSelect({ tokens }: { tokens: Token[] }) {
+  const tokenOptions = tokens.reduce((acc, token) => {
+    acc[token.id] = token;
+    return acc;
+  }, {} as Record<string, Token>);
+
+  const { selectedRow, selectedIndex, change } = useSelector(
+    tokenOptions,
+    0,
+    {
+      onChange: () => console.log("Token changed"),
+      onChangeReactive: (token) => {
+        console.log("Selected:", token.symbol);
+      }
+    }
+  );
+
+  const selectOptions = Object.keys(tokenOptions).map(key => ({
+    id: key,
+    label: tokenOptions[key].symbol,
+    icon: <TokenIcon token={tokenOptions[key]} />
+  }));
+
+  return (
+    <div>
+      <Select
+        label="Select Token"
+        properties={{
+          selectedIndex,
+          options: selectOptions,
+          onChange: change
+        }}
+      />
+      <p>Selected: {selectedRow.symbol}</p>
+    </div>
+  );
+}
+```
+
+```tsx With Reset
+const { selectedRow, change, reset, getNextRow } = useSelector(
+  vaultOptions,
+  0,
+  { onReset: () => console.log("Reset to default") }
+);
+
+<Button onClick={reset}>Reset Selection</Button>
+<Button onClick={() => change(Object.keys(vaultOptions)[getNextRow()])}>
+  Next Option
+</Button>
+```
+</CodeGroup>
+
+### Features
+
+- **Auto-reset**: Resets when options change
+- **Change Callbacks**: React to selection changes
+- **Get Next**: Cycle through options
+- **Type-safe**: Fully generic TypeScript support
+
+## useIsMobile
+
+Detect mobile viewport with customizable breakpoint.
+
+### Signature
+
+```typescript
+function useIsMobile(breakpoint?: number): boolean
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Responsive Rendering
+import { useIsMobile } from "@/hooks/use-is-mobile";
+
+function ResponsiveComponent() {
+  const isMobile = useIsMobile(); // default: 1024px
+
+  return (
+    <div>
+      {isMobile ? (
+        <MobileNavigation />
+      ) : (
+        <DesktopNavigation />
+      )}
+    </div>
+  );
+}
+```
+
+```tsx Custom Breakpoint
+const isSmallScreen = useIsMobile(768);
+const isMediumScreen = useIsMobile(1280);
+
+return (
+  <div className={clsx(
+    isSmallScreen && "p-2",
+    !isSmallScreen && isMediumScreen && "p-4",
+    !isMediumScreen && "p-6"
+  )}>
+    Content
+  </div>
+);
+```
+</CodeGroup>
+
+### Features
+
+- **SSR-safe**: Prevents hydration mismatches
+- **Custom Breakpoints**: Configure viewport threshold
+- **Resize Listener**: Updates on window resize
+- **Performance**: Efficient event listener cleanup
+
+## useMounted
+
+Detect when component has mounted on client.
+
+### Signature
+
+```typescript
+function useMounted(): boolean
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Prevent SSR Hydration Issues
+import useMounted from "@/hooks/use-mounted";
+
+function ClientOnlyComponent() {
+  const mounted = useMounted();
+
+  if (!mounted) return null;
+
+  return (
+    <div>
+      {/* Client-only content */}
+      <BrowserAPIComponent />
+    </div>
+  );
+}
+```
+
+```tsx Conditional Rendering
+const mounted = useMounted();
+
+return (
+  <>
+    <ServerSideContent />
+    {mounted && <ClientSideContent />}
+  </>
+);
+```
+</CodeGroup>
+
+### Features
+
+- **SSR Compatible**: Returns false on server
+- **Hydration Safe**: Prevents mismatches
+- **Simple API**: Boolean return value
+
+## useValueVerifier
+
+Validate input values against constraints.
+
+### Location
+
+`hooks/use-value-verifier.ts`
+
+### Usage Context
+
+Used internally for validating numeric inputs, checking minimum/maximum values, and ensuring input constraints are met.
+
+## useSessionMode
+
+Manage session operation modes.
+
+### Location
+
+`hooks/use-session-mode.ts`
+
+### Usage Context
+
+Handles different session states and modes for user authentication flows.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Context Providers" icon="share-nodes" href="/components/context">
+    Learn about context providers
+  </Card>
+  <Card title="UI Components" icon="palette" href="/components/ui-components">
+    Explore UI components
+  </Card>
+</CardGroup>

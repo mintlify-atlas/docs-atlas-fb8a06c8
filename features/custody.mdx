@@ -1,0 +1,387 @@
+---
+title: Custody & Security
+description: Manage institutional-grade custody with multi-provider support, policy engine, and comprehensive audit trails
+icon: lock
+---
+
+## Overview
+
+The Custody feature provides enterprise-grade digital asset custody solutions with support for multiple providers (MPC, Multisig, HSM), granular policy controls, RBAC, allowlisting, and complete audit logging. Designed for institutional users requiring maximum security and compliance.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Multi-Provider Custody" icon="building">
+    Integrate Copper, Fireblocks, BitGo, or self-custody solutions
+  </Card>
+  <Card title="Policy Engine" icon="gavel">
+    Define transaction policies with quorum requirements and conditional rules
+  </Card>
+  <Card title="RBAC & Permissions" icon="users-gear">
+    Role-based access control for address generation, transfers, approvals, and key rotation
+  </Card>
+  <Card title="Audit & Compliance" icon="file-shield">
+    Complete audit trail with SOC2, ISO27001, and Travel Rule compliance
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Custody Providers
+
+The platform supports multiple custody models:
+
+<Tabs>
+  <Tab title="Copper">
+    - **Model**: MPC (Multi-Party Computation)
+    - **Jurisdiction**: UK, US
+    - **Certifications**: SOC2, ISO27001
+    - **Quorum**: 3-of-5
+    - **Fees**: ~$0.50/tx
+    - **Status**: Operational
+  </Tab>
+  
+  <Tab title="Fireblocks">
+    - **Model**: MPC
+    - **Jurisdiction**: US, EU
+    - **Certifications**: SOC2, ISO27001, CCSS
+    - **Quorum**: 2-of-3
+    - **Fees**: ~$0.75/tx
+    - **Status**: Operational
+  </Tab>
+  
+  <Tab title="BitGo">
+    - **Model**: Multisig
+    - **Jurisdiction**: US
+    - **Certifications**: SOC2
+    - **Quorum**: 2-of-3
+    - **Fees**: ~$1.00/tx
+    - **Status**: Operational
+  </Tab>
+  
+  <Tab title="Self-Custody">
+    - **Model**: Multisig (On-premise)
+    - **Jurisdiction**: On-premise
+    - **Certifications**: Internal
+    - **Quorum**: 3-of-5 (configurable)
+    - **Fees**: Network fees only
+    - **Status**: Operational
+  </Tab>
+</Tabs>
+
+### Segregated Accounts
+
+The custody interface displays all accounts with:
+
+- **Account Name**: Descriptive label (e.g., "Treasury • Segregated")
+- **Custody Model**: MPC, Multisig, or Self
+- **Segregation Type**: 
+  - **Segregated**: Dedicated accounts with isolated keys
+  - **Omnibus**: Pooled accounts (lower cost, less isolation)
+- **Provider**: Which custody service holds the assets
+- **Net Assets**: Total USD value in account
+- **Top Assets**: Primary holdings (BTC, ETH, USDC, etc.)
+- **Policy ID**: Associated governance policy
+- **Status**: Active or Restricted
+
+Example accounts from the codebase:
+
+```tsx
+{
+  name: "Treasury • Segregated",
+  segregation: "Segregated",
+  providerId: "copper",
+  custodyModel: "MPC",
+  netAssetsUSD: 412900000,
+  topAssets: [
+    { symbol: "BTC", amount: "2,500", color: "#C8A24A" },
+    { symbol: "ETH", amount: "15,300", color: "#7C88C2" }
+  ],
+  policyId: "pol1",
+  status: "Active"
+}
+```
+
+### Asset Distribution
+
+Visualize custody holdings by:
+
+<Tabs>
+  <Tab title="By Asset">
+    Pie chart showing:
+    - BTC: 45.2% (4,500 BTC)
+    - ETH: 32.1% (23,800 ETH)
+    - USDC: 18.4% ($156.3M)
+    - Others: 4.3% ($35M)
+  </Tab>
+  
+  <Tab title="By Provider">
+    Distribution across custodians:
+    - Copper: 47.8%
+    - Fireblocks: 23.4%
+    - BitGo: 18.1%
+    - Self: 10.7%
+  </Tab>
+</Tabs>
+
+Toggle between views with the distribution view selector.
+
+### Policy Engine & RBAC
+
+Define granular access controls:
+
+**Role Permissions Matrix:**
+
+| Role | Generate Address | Initiate Transfer | Approve | Modify Policy | Rotate Keys |
+|------|-----------------|------------------|---------|--------------|-------------|
+| Admin | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ops | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Approver | ✗ | ✗ | ✓ | ✗ | ✗ |
+| Viewer | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+**Policy Expression Example:**
+
+```yaml
+transfer.usd > 100000:
+  required: 2 of [Admin, Approver]
+  within: working_hours
+  geo: allowed_jurisdictions
+```
+
+Policies can specify:
+- Quorum requirements (n-of-m approvers)
+- Time-based rules (business hours, cooldowns)
+- Amount thresholds
+- Geo-fencing
+- Asset-specific rules
+
+<Warning>
+Policy modifications require approval workflow. Changes don't take effect until quorum is met.
+</Warning>
+
+### Policy Simulator
+
+Test policies before applying:
+
+<Steps>
+  <Step title="Open Simulator">
+    Click "Simulate" button in Policy Engine section
+  </Step>
+  
+  <Step title="Configure Test Scenario">
+    Enter:
+    - Amount (USD)
+    - Asset (BTC, ETH, USDC)
+    - Time of day
+    - User role (Admin, Ops, Approver)
+  </Step>
+  
+  <Step title="Run Simulation">
+    Click "Run Simulation" to see if transaction would be approved, require additional approval, or be denied
+  </Step>
+</Steps>
+
+### Allowlists & Travel Rule
+
+Manage approved destinations:
+
+<Tabs>
+  <Tab title="Allowlisted Addresses">
+    Pre-approved withdrawal addresses:
+    - Label (e.g., "Coinbase Exchange")
+    - Asset (BTC, ETH, USDC)
+    - Full address
+    - Network (Bitcoin, Ethereum, etc.)
+    - Added by (user email)
+    - Last used date
+    
+    Example entry:
+    ```tsx
+    {
+      label: "Coinbase Exchange",
+      asset: "BTC",
+      address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+      network: "Bitcoin",
+      addedBy: "admin@crocante.com",
+      lastUsed: "2024-11-14"
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Counterparties">
+    Approved institutional counterparties for OTC and exchange transfers
+  </Tab>
+  
+  <Tab title="Travel Rule">
+    FATF Travel Rule compliance:
+    - TRISA/TRP integration
+    - IVMS101 payload exchange
+    - VASP certificate matching
+    - 98.5% counterparty coverage
+    - Last match: Recent timestamp
+    
+    <Info>
+    Travel Rule integration ensures regulatory compliance for transfers above threshold amounts.
+    </Info>
+  </Tab>
+</Tabs>
+
+### Audit & Activity Log
+
+Comprehensive audit trail showing:
+
+- **Time**: Timestamp of event
+- **Event**: Action taken (Transfer Approved, Address Generated, Policy Modified, Key Rotation)
+- **Actor**: User or system that initiated
+- **Object**: Target of action
+- **Result**: Success, Failed, or Pending
+- **Tx/Ref**: Transaction hash or reference ID
+
+Example events:
+
+```tsx
+{
+  time: "2024-11-15 14:32",
+  event: "Transfer Approved",
+  actor: "ops@crocante.com",
+  object: "BTC Transfer 0.5",
+  result: "Success",
+  txRef: "0xabc123..."
+}
+```
+
+**Filter Options:**
+- All events
+- Security events only
+- Policy changes
+- Transfers
+- Key operations
+
+**Export:**
+- CSV export for compliance reporting
+- SOC2 audit requirements
+- Internal security reviews
+
+## Key Custody Metrics
+
+The custody dashboard displays:
+
+1. **Total Under Custody**: $862.4M (+2.3% / 30d)
+2. **Accounts**: 8 Segregated / 4 Omnibus
+3. **Active Providers**: 4 providers (all operational)
+4. **Last Audit**: Q3 2024 (Compliant)
+5. **Policy Posture**: 12 Active / 0 Breaches (30d)
+6. **Key Health**: 100% (Next rotation: 45d)
+
+<Info>
+All metrics update in real-time as custody operations occur.
+</Info>
+
+## Operations Panel
+
+Quick actions available:
+
+- **Generate Address**: Create new deposit address for any supported asset
+- **Start Transfer**: Initiate withdrawal (requires approvals based on policy)
+- **Key Rotation**: Schedule MPC key refresh ceremony
+- **Provider Health**: Monitor custodian system status and latency
+
+**Compliance Links:**
+- Last Audit Report (PDF)
+- SOC2 Certificate
+- ISO27001 Documentation
+
+## How to Use Custody
+
+<Steps>
+  <Step title="Review Custody Accounts">
+    Navigate to Custody page to see all segregated accounts, providers, and total assets under custody.
+  </Step>
+  
+  <Step title="Check Asset Distribution">
+    Toggle between "By Asset" and "By Provider" views to understand concentration risk and diversification.
+  </Step>
+  
+  <Step title="Manage Policies">
+    Review policy engine section:
+    - Verify RBAC permissions are correct
+    - Use simulator to test policy changes
+    - Submit policy modifications if needed (requires approval)
+  </Step>
+  
+  <Step title="Update Allowlists">
+    Add new withdrawal addresses:
+    - Click "New Address" button
+    - Enter label, address, and network
+    - Submit for approval (if policy requires)
+    - Address becomes active after approval
+  </Step>
+  
+  <Step title="Monitor Audit Log">
+    Filter audit events to:
+    - Investigate security incidents
+    - Verify approval workflows
+    - Track key rotations
+    - Export for compliance reporting
+  </Step>
+  
+  <Step title="Schedule Key Rotation">
+    Click "Rotate Keys" to schedule ceremony:
+    - Coordinate with quorum participants
+    - Follow provider-specific procedures
+    - Verify completion in audit log
+  </Step>
+</Steps>
+
+## Security Best Practices
+
+<Warning>
+**Key Rotation**: Rotate MPC keys every 90 days maximum. The system shows "Next rotation: 45d" to remind you.
+</Warning>
+
+<Tip>
+Diversify custody across multiple providers to reduce single-point-of-failure risk. The platform supports 4+ providers simultaneously.
+</Tip>
+
+<Tip>
+Use segregated accounts for high-value holdings and omnibus accounts for operational liquidity. This balances security with cost efficiency.
+</Tip>
+
+<Warning>
+Always verify the provider status is "operational" before initiating large transfers. Check the Provider Health panel for system status.
+</Warning>
+
+## Compliance Features
+
+- **SOC2 Type II**: Service Organization Control compliance
+- **ISO27001**: Information security management
+- **CCSS**: Cryptocurrency Security Standard
+- **Travel Rule**: FATF compliance for large transfers
+- **Audit Trails**: Complete event logging
+- **Proof of Reserves**: Cryptographic verification (via providers)
+
+## Troubleshooting
+
+**Transfer requires approval but shows no approvers:**
+- Check policy quorum requirements
+- Verify approver users have correct roles
+- Review RBAC permissions matrix
+- Contact admin to adjust policy
+
+**Key rotation failing:**
+- Ensure all quorum participants are available
+- Verify MFA/2FA for all participants
+- Check provider system status
+- Contact provider support if issue persists
+
+**Allowlist address not working:**
+- Verify address format is correct for network
+- Ensure address was approved (if policy requires)
+- Check asset and network match transaction
+- Review audit log for rejection reason
+
+## Related Features
+
+- [Portfolio](/features/portfolio) - View assets across custody accounts
+- [Governance](/features/governance) - Define approval policies
+- [Activity](/features/activity) - Track custody operations

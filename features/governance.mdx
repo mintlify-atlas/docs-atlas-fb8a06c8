@@ -1,0 +1,409 @@
+---
+title: Governance & Policies
+description: Configure approval workflows, transaction policies, and role-based access controls
+icon: shield
+---
+
+## Overview
+
+The Governance feature enables you to define and manage organizational policies for all platform operations. Set up approval groups, configure transaction policies, establish quorum requirements, and maintain complete control over who can perform what actions.
+
+## What You Can Do
+
+<CardGroup cols={2}>
+  <Card title="Approval Groups" icon="users">
+    Create user groups with specific approval responsibilities and quorum requirements
+  </Card>
+  <Card title="Transaction Policies" icon="file-contract">
+    Define rules for wallet and counterparty transactions with conditional logic
+  </Card>
+  <Card title="General Policies" icon="gavel">
+    Set platform-wide governance rules for critical operations
+  </Card>
+  <Card title="Policy History" icon="clock-rotate-left">
+    Track all policy changes and approvals with complete audit trail
+  </Card>
+</CardGroup>
+
+## Key Capabilities
+
+### Policy Categories
+
+The governance interface has five main sections:
+
+<Tabs>
+  <Tab title="General Policies">
+    Platform-wide governance rules including:
+    
+    **Approval Group Management:**
+    - Activity: Create, Edit, Remove Approval Group
+    - Quorum: Master Group (1 approval)
+    
+    **Fiat Transfer:**
+    - Activity: New Fiat Transfer
+    - Quorum: Master Group (1 approval)
+    
+    **Transaction Policy Management:**
+    - Activity: Edit Counterparty Policy, Edit Custody Policy
+    - Quorum: Master Group (2 approvals)
+    
+    **Whitelist:**
+    - Activity: New Whitelist Address
+    - Quorum: Master Group (2 approvals)
+    
+    <Info>
+    Changes to general policy quorums require review by the Crocante team. Submit a request to modify these core rules.
+    </Info>
+  </Tab>
+  
+  <Tab title="Crocante Wallet Policies">
+    Transaction policies for withdrawals from Crocante-managed wallets:
+    
+    **Policy Structure:**
+    - **Order**: Priority order (policies evaluated top to bottom)
+    - **Name**: Descriptive policy label
+    - **Initiator**: Who can initiate (All or specific users)
+    - **Destination**: Where funds can go (All or specific addresses)
+    - **Asset**: Which cryptocurrencies (specific or All Assets)
+    - **Range**: Amount thresholds in USD or quantity
+    - **Quorum**: Required approval groups and counts
+    
+    **Example Policy:**
+    ```
+    Name: Policy BTC1
+    Initiator: All Initiators
+    Destination: All Destinations  
+    Asset: BTC
+    Range: 0 to 20 USD (Equivalent in USD)
+    Quorum: Master Group (2)
+    ```
+    
+    <Warning>
+    Transactions that don't match any policy will be **denied by default**. Ensure your policies cover all legitimate use cases.
+    </Warning>
+    
+    <Note>
+    Transactions are evaluated by the **first matching policy** in priority order. Order your policies from most specific to most general.
+    </Note>
+  </Tab>
+  
+  <Tab title="Counterparty Policies">
+    Policies for withdrawals from exchanges, OTC desks, and other counterparties:
+    
+    **Policy Structure:**
+    - **Order**: Priority sequence
+    - **Name**: Policy identifier
+    - **Initiator**: User roles that can initiate
+    - **Origin**: Source account type (Exchange, Internal OTC, Whitelist)
+    - **Destination**: Target account type (Parfin Wallet, Whitelist, All)
+    - **Asset**: Supported cryptocurrencies
+    - **Range**: Amount limits
+    - **Quorum**: Approval requirements
+    
+    **Example Policy:**
+    ```
+    Name: iOTC ALL
+    Initiator: All Initiators
+    Origin: Internal OTC
+    Destination: All Destinations
+    Asset: All Assets
+    Range: 0 USD or higher (Equivalent in USD)
+    Quorum: Master Group (1)
+    ```
+    
+    <Tip>
+    Use counterparty policies to enforce different approval requirements based on where funds are coming from and going to.
+    </Tip>
+  </Tab>
+  
+  <Tab title="Approval Groups">
+    User groups responsible for approving activities:
+    
+    **Group Properties:**
+    - **Name**: Group identifier (e.g., "Master Group", "OPs Team")
+    - **Members**: Number of users in group (e.g., "23 Users")
+    - **Last Update**: When group was modified
+    - **Rules**: Number of policies using this group
+    - **Status**: Active or Inactive
+    
+    **Example Groups:**
+    - **Master Group**: 23 Users, 27 Rules, Active
+    - **OPs Team**: 6 Users, 0 Rules, Active
+    - **Teste de Grupo**: 20 Users, 2 Rules, Active
+    
+    <Info>
+    Only admins can create, edit, or remove groups. Changes require approval according to "Approval Group Management" policy.
+    </Info>
+  </Tab>
+  
+  <Tab title="Activity">
+    Audit log of all governance-related changes:
+    - Policy modifications
+    - Group membership changes
+    - Approval decisions
+    - Quorum adjustments
+  </Tab>
+</Tabs>
+
+### Policy Evaluation Logic
+
+<Steps>
+  <Step title="Transaction Initiated">
+    User or system initiates a transaction (withdrawal, transfer, etc.)
+  </Step>
+  
+  <Step title="Policy Matching">
+    Platform evaluates policies in priority order:
+    - Check if initiator matches policy
+    - Verify destination matches
+    - Confirm asset matches
+    - Check amount is within range
+  </Step>
+  
+  <Step title="First Match Wins">
+    Use the first policy that matches all criteria. Stop evaluation.
+  </Step>
+  
+  <Step title="Apply Quorum">
+    Based on matched policy:
+    - If quorum = 0: Auto-approve
+    - If quorum > 0: Request approvals from specified group(s)
+    - If no match: Deny transaction
+  </Step>
+  
+  <Step title="Await Approvals">
+    Transaction stays pending until:
+    - Required approvals received → Execute
+    - Timeout or rejection → Cancel
+  </Step>
+</Steps>
+
+## Approval Workflows
+
+### Quorum Requirements
+
+Policies specify quorum as:
+- **Group Name (n)**: Requires `n` approvals from members of that group
+- **Multiple Groups**: Can require approvals from multiple groups
+  - Example: "Master Group (1)\nTeste de Grupo (1)" requires 1 approval from each group
+
+<Note>
+Approvers cannot approve their own transactions. The system automatically excludes the initiator from the approval pool.
+</Note>
+
+### Creating Approval Groups
+
+<Steps>
+  <Step title="Open Approval Groups Tab">
+    Navigate to Governance → Approval Groups
+  </Step>
+  
+  <Step title="Click Create Group">
+    Click the "+ Create Group" button in the top-right
+  </Step>
+  
+  <Step title="Configure Group">
+    Enter:
+    - Group name
+    - Member selection (choose users from organization)
+    - Description (optional)
+  </Step>
+  
+  <Step title="Submit for Approval">
+    Click "Create" - this action requires approval per "Approval Group Management" policy
+  </Step>
+  
+  <Step title="Wait for Approval">
+    Master Group members approve the new group creation
+  </Step>
+  
+  <Step title="Group Active">
+    Once approved, the group can be used in transaction policies
+  </Step>
+</Steps>
+
+## Editing Policies
+
+### Wallet Policies
+
+<Steps>
+  <Step title="Navigate to Wallet Policies">
+    Go to Governance → Crocante Wallet Policies tab
+  </Step>
+  
+  <Step title="Click Edit Policies">
+    Click "Edit Policies" button in top-right
+  </Step>
+  
+  <Step title="Modify Policy Table">
+    Make changes:
+    - Reorder policies by dragging rows (priority matters!)
+    - Edit existing policies (name, range, quorum)
+    - Add new policies
+    - Delete outdated policies
+  </Step>
+  
+  <Step title="Submit for Approval">
+    Click "Save" - changes require approval per "Transaction Policy Management" policy (Master Group with 2 approvals)
+  </Step>
+  
+  <Step title="Review Policy History">
+    Click "Policy History" to see pending approval or past changes
+  </Step>
+</Steps>
+
+<Warning>
+Policy changes don't take effect until approved. During approval period, old policies remain in force.
+</Warning>
+
+### Counterparty Policies
+
+Same workflow as Wallet Policies, but under "Counterparty Policies" tab.
+
+## Policy Components
+
+The governance UI uses:
+
+- **Tab Navigation**: Switch between policy categories
+- **Policy Tables**: Display current rules with sortable columns
+- **Edit Modals**: Modify policies and groups
+- **History View**: Track changes and approvals
+- **Info Banners**: Show important policy behavior notes
+
+## Data Structure
+
+Governance rules follow this structure:
+
+```tsx
+{
+  name: string,          // Rule name
+  activity: string,      // Actions covered
+  quorum: string        // Approval requirement
+}
+```
+
+Wallet policies:
+
+```tsx
+{
+  order: string,         // Priority
+  name: string,          // Policy name
+  initiator: string,     // Who can initiate
+  destination: string,   // Where can send
+  asset: string,         // Which assets
+  assetIcon: string,     // Display icon
+  range: string,         // Amount limits
+  quorum: string         // Approval groups
+}
+```
+
+Counterparty policies add:
+
+```tsx
+{
+  origin: string,        // Source account type
+  // ... other fields same as wallet policies
+}
+```
+
+Approval groups:
+
+```tsx
+{
+  name: string,          // Group name
+  members: string,       // Member count
+  lastUpdate: string,    // Last modified
+  rules: string,         // Policy count using this group
+  status: string         // Active/Inactive
+}
+```
+
+## Best Practices
+
+<Tip>
+**Policy Ordering Matters**: Place specific policies (e.g., "BTC withdrawals 0-20 USD") before general policies (e.g., "All assets, all amounts"). The first match wins.
+</Tip>
+
+<Tip>
+**Use Descriptive Names**: Name policies clearly ("Policy BTC - 15-30" instead of "Policy 3") for easier management and auditing.
+</Tip>
+
+<Tip>
+**Balance Security and Usability**: Higher quorum requirements increase security but slow operations. Match quorum to transaction risk level.
+</Tip>
+
+<Warning>
+**Avoid Policy Gaps**: Ensure legitimate transactions have a matching policy. Unmatchable transactions are automatically denied.
+</Warning>
+
+<Info>
+**Test with Low Amounts**: When adding new policies, test with small transactions first to verify the policy matches correctly.
+</Info>
+
+## Common Policy Patterns
+
+### Low-Value Auto-Approve
+
+```
+Name: Small Transactions Auto
+Range: 0 to 100 USD
+Asset: All Assets
+Quorum: Master Group (1)  // Fast approval
+```
+
+### High-Value Multi-Signature
+
+```
+Name: Large Transfers
+Range: 100,000 USD or higher  
+Asset: All Assets
+Quorum: Master Group (2) + Approver Group (1)  // 3 total approvals
+```
+
+### Asset-Specific Rules
+
+```
+Name: BTC Treasury Protection
+Asset: BTC
+Range: 1 BTC or higher
+Destination: Whitelist Only
+Quorum: Master Group (3)  // Extra security for BTC
+```
+
+### Time-Based Rules
+
+<Info>
+Future versions will support time-based conditions (business hours only, cooling periods) as shown in the Custody policy engine.
+</Info>
+
+## Troubleshooting
+
+**Transaction denied but should be allowed:**
+- Check policy order - is a more specific policy blocking it?
+- Verify all policy criteria match (initiator, asset, amount, destination)
+- Review policy history - did recent changes affect matching?
+- Check if transaction falls in a range gap between policies
+
+**Policy changes not taking effect:**
+- Verify approval workflow completed
+- Check quorum was met (all required approvals received)
+- Review Activity tab for approval status
+- Contact approvers if stuck pending
+
+**Group creation failing:**
+- Ensure you have admin permissions
+- Check "Approval Group Management" policy allows your role
+- Verify Master Group has active approvers
+- Review error message for specific validation failures
+
+**Approval requests not received:**
+- Verify approver is in correct group
+- Check notification settings
+- Review email delivery (check spam folder)
+- Confirm approver account is active
+
+## Related Features
+
+- [Custody](/features/custody) - Implements governance policies for custody operations
+- [Activity](/features/activity) - Shows approval workflows in transaction history
+- [Portfolio](/features/portfolio) - Withdrawal policies apply to portfolio transfers

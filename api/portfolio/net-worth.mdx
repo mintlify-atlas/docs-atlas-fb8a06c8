@@ -1,0 +1,449 @@
+---
+title: 'Get Net Worth'
+description: 'Retrieve comprehensive net worth data including assets, liabilities, and total portfolio value'
+api: 'GET {EP_NET_WORTH}'
+---
+
+Retrieve the complete net worth summary for a client, including all assets, liabilities, and estimated total value. This endpoint provides detailed information about each cryptocurrency holding, staking positions, and outstanding loans.
+
+## Polling Configuration
+
+This endpoint supports automatic polling for real-time updates:
+
+- **Stale Time**: 5 minutes (300,000ms)
+- **Default Poll Interval**: Configurable via `pollIntervalMs` parameter
+- **Background Polling**: Enabled when `pollIntervalMs > 0`
+
+## Authentication
+
+Requires valid session authentication. The endpoint automatically includes credentials from the active session.
+
+## Response
+
+The response includes three main sections: assets, liabilities, and total estimated value.
+
+<ResponseField name="data" type="object" required>
+  The main data container for net worth information
+  
+  <Expandable title="Net Worth Data">
+    <ResponseField name="assets" type="object" required>
+      Container for all asset-related data
+      
+      <Expandable title="Assets">
+        <ResponseField name="clientId" type="string" required>
+          Unique identifier for the client
+          
+          Example: `"79f970d7-3b2f-492c-a358-6c1f1c2fd429"`
+        </ResponseField>
+        
+        <ResponseField name="assets" type="Asset[]" required>
+          Array of asset holdings
+          
+          <Expandable title="Asset Object">
+            <ResponseField name="currency" type="Currency" required>
+              The cryptocurrency or token details
+              
+              <Expandable title="Currency">
+                <ResponseField name="id" type="string" required>
+                  Currency symbol (e.g., `"BTC"`, `"ETH"`)
+                </ResponseField>
+                
+                <ResponseField name="name" type="string" required>
+                  Full currency name (e.g., `"Bitcoin"`, `"Ethereum"`)
+                </ResponseField>
+                
+                <ResponseField name="decimals" type="number" required>
+                  Number of decimal places for precision
+                </ResponseField>
+                
+                <ResponseField name="allowTransfers" type="boolean" required>
+                  Whether transfers are allowed for this currency
+                </ResponseField>
+                
+                <ResponseField name="disabled" type="boolean" required>
+                  Whether the currency is currently disabled
+                </ResponseField>
+                
+                <ResponseField name="priority" type="number" required>
+                  Display priority (0-3, higher is more prominent)
+                </ResponseField>
+              </Expandable>
+            </ResponseField>
+            
+            <ResponseField name="quoteCurrency" type="Currency" required>
+              The quote currency for pricing (typically USDT)
+            </ResponseField>
+            
+            <ResponseField name="available" type="string" required>
+              Amount available for trading/withdrawal
+              
+              Example: `"0.0083506"`
+            </ResponseField>
+            
+            <ResponseField name="locked" type="string" required>
+              Amount locked in orders or operations
+              
+              Example: `"0.00016514"`
+            </ResponseField>
+            
+            <ResponseField name="total" type="string" required>
+              Total amount (available + locked)
+              
+              Example: `"0.00851574"`
+            </ResponseField>
+            
+            <ResponseField name="staking" type="object" required>
+              Staking position details
+              
+              <Expandable title="Staking">
+                <ResponseField name="initial" type="string" required>
+                  Initial staked amount
+                  
+                  Example: `"33.3"`
+                </ResponseField>
+                
+                <ResponseField name="accrued" type="string" required>
+                  Accrued staking rewards
+                  
+                  Example: `"0.24"`
+                </ResponseField>
+              </Expandable>
+            </ResponseField>
+            
+            <ResponseField name="estPrice" type="string" required>
+              Estimated price per unit in quote currency
+              
+              Example: `"94040.55"`
+            </ResponseField>
+            
+            <ResponseField name="estValue" type="string" required>
+              Estimated total value in quote currency
+              
+              Example: `"800.82"`
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+        
+        <ResponseField name="estTotalValue" type="string" required>
+          Total estimated value of all assets
+          
+          Example: `"1350.89"`
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="liabilities" type="object" required>
+      Container for all liability-related data
+      
+      <Expandable title="Liabilities">
+        <ResponseField name="liabilities" type="Liability[]" required>
+          Array of outstanding liabilities
+          
+          <Expandable title="Liability Object">
+            <ResponseField name="currency" type="Currency" required>
+              The currency of the debt
+            </ResponseField>
+            
+            <ResponseField name="quoteCurrency" type="Currency" required>
+              The quote currency for pricing
+            </ResponseField>
+            
+            <ResponseField name="amount" type="string" required>
+              Current debt amount
+              
+              Example: `"32.48"`
+            </ResponseField>
+            
+            <ResponseField name="debt" type="string" required>
+              Principal debt amount
+              
+              Example: `"32.48"`
+            </ResponseField>
+            
+            <ResponseField name="interest" type="string" required>
+              Accrued interest on the debt
+              
+              Example: `"0.36"`
+            </ResponseField>
+            
+            <ResponseField name="estPrice" type="string" required>
+              Estimated price per unit in quote currency
+            </ResponseField>
+            
+            <ResponseField name="estValue" type="string" required>
+              Estimated total debt value
+              
+              Example: `"32.48"`
+            </ResponseField>
+            
+            <ResponseField name="estInterestValue" type="string" required>
+              Estimated total interest value
+              
+              Example: `"0.36"`
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+        
+        <ResponseField name="estTotalValue" type="string" required>
+          Total estimated value of all liabilities
+          
+          Example: `"32.48"`
+        </ResponseField>
+        
+        <ResponseField name="estTotalInterestValue" type="string" required>
+          Total estimated interest across all liabilities
+          
+          Example: `"0.36"`
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="estTotalValue" type="string" required>
+      Net worth (total assets - total liabilities)
+      
+      Example: `"1318.41"`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code
+  
+  Example: `200`
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": {
+    "assets": {
+      "clientId": "79f970d7-3b2f-492c-a358-6c1f1c2fd429",
+      "assets": [
+        {
+          "currency": {
+            "id": "BTC",
+            "name": "Bitcoin",
+            "decimals": 8,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "quoteCurrency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "available": "0.0083506",
+          "locked": "0.00016514",
+          "total": "0.00851574",
+          "staking": {
+            "initial": "0",
+            "accrued": "0"
+          },
+          "estPrice": "94040.55",
+          "estValue": "800.82"
+        },
+        {
+          "currency": {
+            "id": "ETH",
+            "name": "Ethereum",
+            "decimals": 8,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 2
+          },
+          "quoteCurrency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "available": "0.04256646",
+          "locked": "0.04683954",
+          "total": "0.089406",
+          "staking": {
+            "initial": "0",
+            "accrued": "0"
+          },
+          "estPrice": "3202.515",
+          "estValue": "286.32"
+        },
+        {
+          "currency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "quoteCurrency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "available": "34.49",
+          "locked": "34.54",
+          "total": "69.03",
+          "staking": {
+            "initial": "33.3",
+            "accrued": "0.24"
+          },
+          "estPrice": "1",
+          "estValue": "69.03"
+        }
+      ],
+      "estTotalValue": "1350.89"
+    },
+    "liabilities": {
+      "liabilities": [
+        {
+          "currency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "quoteCurrency": {
+            "id": "USDT",
+            "name": "Tether",
+            "decimals": 2,
+            "allowTransfers": true,
+            "disabled": false,
+            "priority": 3
+          },
+          "amount": "32.48",
+          "debt": "32.48",
+          "interest": "0.36",
+          "estPrice": "1",
+          "estValue": "32.48",
+          "estInterestValue": "0.36"
+        }
+      ],
+      "estTotalValue": "32.48",
+      "estTotalInterestValue": "0.36"
+    },
+    "estTotalValue": "1318.41"
+  },
+  "status": 200
+}
+```
+
+## TypeScript Types
+
+```typescript
+import { z } from "zod";
+
+export const CurrencySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  decimals: z.number(),
+  allowTransfers: z.boolean(),
+  disabled: z.boolean(),
+  priority: z.number(),
+});
+
+export const StakingSchema = z.object({
+  initial: z.string(),
+  accrued: z.string(),
+});
+
+export const AssetSchema = z.object({
+  currency: CurrencySchema,
+  quoteCurrency: CurrencySchema,
+  available: z.string(),
+  locked: z.string(),
+  total: z.string(),
+  staking: StakingSchema,
+  estPrice: z.string(),
+  estValue: z.string(),
+});
+
+export type Asset = z.infer<typeof AssetSchema>;
+
+export const LiabilitySchema = z.object({
+  currency: CurrencySchema,
+  quoteCurrency: CurrencySchema,
+  amount: z.string(),
+  debt: z.string(),
+  interest: z.string(),
+  estPrice: z.string(),
+  estValue: z.string(),
+  estInterestValue: z.string(),
+});
+
+export type Liability = z.infer<typeof LiabilitySchema>;
+
+export const NetWorthDataSchema = z.object({
+  assets: z.object({
+    clientId: z.string(),
+    assets: z.array(AssetSchema),
+    estTotalValue: z.string(),
+  }),
+  liabilities: z.object({
+    liabilities: z.array(LiabilitySchema),
+    estTotalValue: z.string(),
+    estTotalInterestValue: z.string(),
+  }),
+  estTotalValue: z.string(),
+});
+
+export type NetWorthData = z.infer<typeof NetWorthDataSchema>;
+
+export const netWorthDataResponseSchema = z.object({
+  data: NetWorthDataSchema,
+  status: z.number(),
+});
+
+export type NetWorthDataResponse = z.infer<typeof netWorthDataResponseSchema>;
+```
+
+## Usage Example
+
+```typescript
+import { useNetWorth } from '@/services/hooks/use-net-worth';
+
+function PortfolioComponent() {
+  const userId = "user-123";
+  const pollInterval = 30000; // Poll every 30 seconds
+  
+  const { data: netWorthData, isLoading, error } = useNetWorth(
+    userId,
+    pollInterval
+  );
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading portfolio</div>;
+  
+  return (
+    <div>
+      <h1>Net Worth: ${netWorthData?.estTotalValue}</h1>
+      <h2>Total Assets: ${netWorthData?.assets.estTotalValue}</h2>
+      <h2>Total Liabilities: ${netWorthData?.liabilities.estTotalValue}</h2>
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+The endpoint gracefully handles errors by falling back to mock data when:
+- Network requests fail
+- Authentication is invalid
+- The session mode is set to "mock"
+
+## Related Endpoints
+
+- [Get Available Tokens](/api/portfolio/availables) - Get list of all available token balances
+- [Get Token Statement](/api/portfolio/statements) - Get statement for a specific token

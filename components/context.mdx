@@ -1,0 +1,438 @@
+---
+title: 'Context Providers'
+description: 'React Context providers for global state management'
+---
+
+## Overview
+
+Crocante uses React Context API for managing global application state. Context providers wrap the application and provide access to shared state and functionality through custom hooks.
+
+## Provider Architecture
+
+All providers are composed in the `ProvidersWrapper` component:
+
+```tsx
+function ProvidersWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SessionProvider>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </SessionProvider>
+    </QueryClientProvider>
+  );
+}
+```
+
+## SessionProvider
+
+Manages user authentication state and session lifecycle.
+
+### Context Type
+
+```typescript
+type SessionContextType = {
+  isSignedIn: boolean;
+  user: User | null;
+  isLoading: boolean;
+  logout: () => void;
+  setToken: (token: string) => void;
+};
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Access Session State
+import { useSession } from "@/context/session-provider";
+
+function UserProfile() {
+  const { isSignedIn, user, isLoading, logout } = useSession();
+
+  if (isLoading) {
+    return <Skeleton lines={3} />;
+  }
+
+  if (!isSignedIn || !user) {
+    return <LoginPrompt />;
+  }
+
+  return (
+    <div>
+      <h2>Welcome, {user.name}</h2>
+      <p>Email: {user.email}</p>
+      <Button onClick={logout}>Logout</Button>
+    </div>
+  );
+}
+```
+
+```tsx Protected Component
+function PortfolioPage() {
+  const { isSignedIn, user } = useSession();
+
+  if (!isSignedIn) {
+    return <Navigate to="/" />;
+  }
+
+  return (
+    <div>
+      <h1>{user?.name}'s Portfolio</h1>
+      <PortfolioContent userId={user?.id} />
+    </div>
+  );
+}
+```
+
+```tsx Conditional Rendering
+function Navigation() {
+  const { isSignedIn, logout } = useSession();
+
+  return (
+    <nav>
+      {isSignedIn ? (
+        <>
+          <Link to="/portfolio">Portfolio</Link>
+          <Link to="/activity">Activity</Link>
+          <Button onClick={logout}>Logout</Button>
+        </>
+      ) : (
+        <Button onClick={openAuthModal}>Login</Button>
+      )}
+    </nav>
+  );
+}
+```
+</CodeGroup>
+
+### Features
+
+- **Auto-polling**: Refreshes user data at intervals (configured via `POLL_USER_DATA_INTERVAL`)
+- **Session Expiry**: Integrates with `SessionExpiryManager`
+- **Auth Events**: Listens for `auth-expired` events
+- **Query Integration**: Uses React Query for data fetching
+- **Logout Cleanup**: Clears cache and local storage
+
+### Implementation Details
+
+```typescript
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const { data: user, isLoading, isError } = useUser(POLL_USER_DATA_INTERVAL);
+  const isSignedIn = !!user && !isError;
+
+  const setToken = useCallback((_token: string) => {
+    // No-op: session is HttpOnly cookie; BFF owns token
+    queryClient.invalidateQueries({ queryKey: ["user", "me"] });
+  }, []);
+
+  const logout = useCallback(async () => {
+    await LoginService.logout();
+    queryClient.removeQueries({ queryKey: ["user", "me"] });
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      LocalStorageManager.clearLocalStorage();
+      queryClient.removeQueries({ queryKey: ["user", "me"] });
+    };
+    window.addEventListener("auth-expired", handler);
+    return () => window.removeEventListener("auth-expired", handler);
+  }, []);
+
+  return (
+    <SessionContext.Provider value={{ isSignedIn, user, isLoading, logout, setToken }}>
+      <SessionExpiryManager />
+      {children}
+    </SessionContext.Provider>
+  );
+}
+```
+
+## ToastProvider
+
+Manages global toast notifications.
+
+### Context Type
+
+```typescript
+type ToastContextType = {
+  showToast: (message: string, type: ToastType) => void;
+  hideToast: () => void;
+};
+
+enum ToastType {
+  INFO = "info",
+  SUCCESS = "success",
+  WARNING = "warning",
+  ERROR = "error"
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Show Notifications
+import { useToast } from "@/context/toast-provider";
+import { ToastType } from "@/components/core/toast";
+
+function TransferForm() {
+  const { showToast } = useToast();
+
+  const handleSubmit = async () => {
+    try {
+      await transferFunds(amount);
+      showToast("Transfer successful!", ToastType.SUCCESS);
+    } catch (error) {
+      showToast("Transfer failed", ToastType.ERROR);
+    }
+  };
+
+  return <form onSubmit={handleSubmit}>...</form>;
+}
+```
+
+```tsx Different Toast Types
+const { showToast } = useToast();
+
+// Success
+showToast("Settings saved successfully", ToastType.SUCCESS);
+
+// Error
+showToast("Failed to load data", ToastType.ERROR);
+
+// Warning
+showToast("Session will expire soon", ToastType.WARNING);
+
+// Info
+showToast("Processing your request", ToastType.INFO);
+```
+
+```tsx Manual Dismiss
+const { showToast, hideToast } = useToast();
+
+showToast("Processing...", ToastType.INFO);
+
+// Later, manually hide
+setTimeout(() => {
+  hideToast();
+}, 3000);
+```
+</CodeGroup>
+
+### Features
+
+- **Auto-dismiss**: Toasts automatically hide after 5 seconds
+- **Multiple Types**: Success, error, warning, info variants
+- **Manual Control**: Can manually hide toasts
+- **Global Access**: Available throughout the app
+
+### Implementation Details
+
+```typescript
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<ToastType>(ToastType.INFO);
+
+  const showToastCallback = (message: string, type: ToastType) => {
+    setShowToast(true);
+    setToastMessage(message);
+    setToastType(type);
+  };
+
+  const hideToastCallback = () => {
+    setShowToast(false);
+  };
+
+  return (
+    <ToastContext.Provider value={{ showToast: showToastCallback, hideToast: hideToastCallback }}>
+      <Toast
+        show={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={hideToastCallback}
+        duration={5000}
+      />
+      {children}
+    </ToastContext.Provider>
+  );
+}
+```
+
+## CustomHeaderProvider
+
+Manages dynamic header content for pages.
+
+### Context Type
+
+```typescript
+type CustomHeaderContextType = {
+  setCustomAdditionalHeader: (header: React.ReactNode) => void;
+};
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Set Custom Header
+import { useCustomHeader } from "@/context/custom-header-context";
+
+function PortfolioPage() {
+  const { setCustomAdditionalHeader } = useCustomHeader();
+
+  useEffect(() => {
+    setCustomAdditionalHeader(
+      <div className="flex gap-2">
+        <Button variant="primary">Add Funds</Button>
+        <Button variant="outline">Withdraw</Button>
+      </div>
+    );
+
+    // Clean up on unmount
+    return () => setCustomAdditionalHeader(null);
+  }, [setCustomAdditionalHeader]);
+
+  return <div>Portfolio content...</div>;
+}
+```
+
+```tsx Dynamic Header Actions
+function TransactionsPage() {
+  const { setCustomAdditionalHeader } = useCustomHeader();
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    setCustomAdditionalHeader(
+      <Select
+        label="Filter"
+        properties={{
+          selectedIndex: 0,
+          options: [
+            { id: "all", label: "All" },
+            { id: "pending", label: "Pending" },
+            { id: "completed", label: "Completed" }
+          ],
+          onChange: (e) => setFilter(e.target.value)
+        }}
+      />
+    );
+
+    return () => setCustomAdditionalHeader(null);
+  }, [setCustomAdditionalHeader, filter]);
+
+  return <TransactionsList filter={filter} />;
+}
+```
+</CodeGroup>
+
+### Features
+
+- **Page-specific Headers**: Each page can customize header
+- **React Node Support**: Any React component can be header
+- **Automatic Cleanup**: Clear header on unmount
+- **Dynamic Updates**: Header updates reactively
+
+### Implementation Details
+
+```typescript
+export function CustomHeaderProvider({
+  children,
+  setCustomAdditionalHeader,
+}: {
+  children: React.ReactNode;
+  setCustomAdditionalHeader: (header: React.ReactNode) => void;
+}) {
+  return (
+    <CustomHeaderContext.Provider value={{ setCustomAdditionalHeader }}>
+      {children}
+    </CustomHeaderContext.Provider>
+  );
+}
+
+export function useCustomHeader() {
+  const context = useContext(CustomHeaderContext);
+  if (!context) {
+    throw new Error("useCustomHeader must be used within CustomHeaderProvider");
+  }
+  return context;
+}
+```
+
+## SessionExpiryManager
+
+Internal component that handles session expiration warnings.
+
+### Location
+
+`context/session-expiry-manager.tsx`
+
+### Functionality
+
+Automatically integrated into `SessionProvider`. Monitors session expiration and displays warning modal using the `useSessionExpiry` hook.
+
+## AuthExpiredListener
+
+Listens for authentication expiration events.
+
+### Location
+
+`context/auth-expired-listener.tsx`
+
+### Functionality
+
+Listens for the global `auth-expired` event and triggers the authentication modal to re-authenticate the user.
+
+## Error Handling
+
+All context hooks throw errors when used outside their provider:
+
+```typescript
+export function useSession() {
+  const context = useContext(SessionContext);
+  if (!context) {
+    throw new Error("useSession must be used within a SessionProvider");
+  }
+  return context;
+}
+```
+
+This ensures contexts are always used correctly within their provider boundaries.
+
+## Provider Composition Pattern
+
+The platform uses a single wrapper component to compose all providers:
+
+```tsx
+// app/layout.tsx or similar
+import ProvidersWrapper from "@/context/providers-wrapper";
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ProvidersWrapper>
+          {children}
+        </ProvidersWrapper>
+      </body>
+    </html>
+  );
+}
+```
+
+This pattern:
+- Centralizes provider setup
+- Ensures correct provider order
+- Simplifies testing
+- Makes provider dependencies explicit
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Session Management" icon="user-shield" href="/features/authentication">
+    Learn about authentication
+  </Card>
+  <Card title="Custom Hooks" icon="hook" href="/components/hooks">
+    Explore React hooks
+  </Card>
+</CardGroup>

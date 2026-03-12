@@ -1,0 +1,469 @@
+---
+title: 'Deposit & Withdrawal'
+description: 'Fund your account and withdraw assets across multiple blockchain networks'
+icon: 'money-bill-transfer'
+---
+
+## Overview
+
+Crocante supports multi-network deposits and withdrawals for cryptocurrencies and fiat currencies. This guide covers generating deposit addresses, receiving assets, and sending funds to external wallets or accounts.
+
+## Depositing Cryptocurrency
+
+### Opening the Deposit Modal
+
+<Steps>
+  <Step title="Navigate to Portfolio">
+    Go to your portfolio dashboard where all your assets are displayed.
+  </Step>
+  
+  <Step title="Click Deposit">
+    Click the **Deposit** button in the portfolio header. This opens the `DepositModal` component.
+  </Step>
+  
+  <Step title="Configure Deposit">
+    The deposit modal (`domain/portfolio/components/header-actions/deposit-modal.tsx`) allows you to customize your deposit parameters.
+  </Step>
+</Steps>
+
+### Generating a Deposit Address
+
+<Steps>
+  <Step title="Select Asset Type">
+    Choose between:
+    - **Crypto**: For cryptocurrency deposits
+    - **Fiat**: For fiat currency deposits (on-ramp coming soon)
+  </Step>
+  
+  <Step title="Choose Token">
+    Select the cryptocurrency you want to deposit from the **Token** dropdown.
+    
+    Supported tokens include BTC, ETH, USDC, USDT, and many others.
+  </Step>
+  
+  <Step title="Select Network">
+    Choose the blockchain network from the **Network** dropdown:
+    - Ethereum Mainnet
+    - Polygon
+    - Arbitrum
+    - BSC (Binance Smart Chain)
+    - And other supported networks
+    
+    <Warning>
+      **Critical**: Only send assets on the selected network. Deposits from other networks won't be credited and may be lost permanently.
+    </Warning>
+  </Step>
+  
+  <Step title="View Deposit Address">
+    Once you select a token and network, the deposit address is generated using the `useDepositAddressData` hook:
+    
+    ```tsx
+    const { depositAddress, network, isLoading } = 
+      useDepositAddressData(networkId);
+    ```
+    
+    The address appears as:
+    - **QR Code**: For easy scanning with mobile wallets
+    - **Text Address**: Full address displayed above the QR code
+    - **Token Icon**: Overlaid on the QR code center for visual confirmation
+  </Step>
+</Steps>
+
+### Understanding Deposit Requirements
+
+The deposit modal displays important information:
+
+<Info>
+  **Network Warning**: "Only send assets on [Network Name]. Deposits from other networks won't be credited."
+  
+  **Minimum Deposit**: "Minimal deposit: 0.001 ETH" (varies by token)
+</Info>
+
+The minimum deposit amount is retrieved from:
+```tsx
+formatToMaxDefinition(
+  Number(networkSelector.options[networkSelector.selectedIndex]?.value),
+  tokenSelector.options[tokenSelector.selectedIndex]?.label
+)
+```
+
+### Copying the Deposit Address
+
+<Steps>
+  <Step title="View Address">
+    The full deposit address is displayed in a disabled text field above the Copy button:
+    - **Desktop**: Shows complete address
+    - **Mobile**: Shows shortened address using `getShortAddress()` utility
+  </Step>
+  
+  <Step title="Copy Address">
+    Click the **Copy address** button to copy the address to your clipboard.
+    
+    The button includes:
+    - Copy icon when ready
+    - Check icon when copied
+    - Confirmation text: "Address copied to clipboard"
+  </Step>
+  
+  <Step title="Paste in Wallet">
+    Paste the address into your external wallet or exchange to initiate the transfer.
+  </Step>
+</Steps>
+
+<Note>
+  The address copy feature uses:
+  ```tsx
+  navigator.clipboard.writeText(evmAddress);
+  ```
+  
+  A check icon appears for 2 seconds after copying to confirm success.
+</Note>
+
+## Multi-Network Support
+
+### Network-Specific Addresses
+
+Crocante uses the `useDepositAddress` hook to fetch deposit addresses per network:
+
+```tsx
+const { data: depositAddressData } = useDepositAddress(
+  networkId,
+  POLL_TOKENS_NETWORKS_DATA_INTERVAL
+);
+```
+
+Each network has its own configuration retrieved via `getNetworkConfig(networkId)`:
+
+- **Chain Name**: e.g., "Ethereum", "Polygon", "Arbitrum"
+- **Network ID**: Unique identifier for the blockchain
+- **Token Standards**: ERC-20, BEP-20, etc.
+
+<Warning>
+  Different networks may use different address formats. Always verify the network matches your sending wallet's network.
+</Warning>
+
+### Unsupported Networks
+
+If you select a network that isn't currently supported:
+
+```
+We still don't support deposits on this network.
+```
+
+The deposit address and QR code will not be displayed.
+
+## Depositing Fiat Currency
+
+### Fiat On-Ramp (Coming Soon)
+
+When you select **Fiat** as the asset type:
+
+<Steps>
+  <Step title="Select Fiat Currency">
+    Choose from supported fiat currencies (USD, EUR, GBP, etc.) in the **Fiat** dropdown.
+  </Step>
+  
+  <Step title="On-Ramp Notice">
+    The modal displays:
+    ```
+    On-ramping fiat assets will be available soon.
+    You can still deposit crypto assets.
+    ```
+  </Step>
+  
+  <Step title="Alternative: Crypto Deposit">
+    Switch back to **Crypto** asset type to deposit cryptocurrencies instead.
+  </Step>
+</Steps>
+
+<Info>
+  Fiat on-ramp integration is under development. You'll be able to deposit fiat via bank transfer or credit card once available.
+</Info>
+
+## Sending/Withdrawing Assets
+
+### Opening the Send Modal
+
+<Steps>
+  <Step title="Access Send Feature">
+    Click the **Send** button in the portfolio header to open the `SendModal` component.
+  </Step>
+  
+  <Step title="Configure Transfer">
+    The send modal (`domain/portfolio/components/header-actions/send-modal.tsx`) allows you to transfer assets between locations.
+  </Step>
+</Steps>
+
+### Configuring a Send Transaction
+
+<Steps>
+  <Step title="Select Asset">
+    Choose the cryptocurrency you want to send from the **Asset** dropdown.
+    
+    The dropdown shows:
+    - Token symbol and icon
+    - Your available balance for that token
+  </Step>
+  
+  <Step title="Choose Source">
+    Select the **From** location where your assets are currently held:
+    - Internal Wallets
+    - Specific Exchange account
+    - Custodian account
+    - Bank account (for fiat)
+  </Step>
+  
+  <Step title="Choose Destination">
+    Select the **To** destination where you want to send the assets:
+    - Another internal wallet
+    - External address
+    - Different exchange
+    - Different custodian
+    
+    <Warning>
+      The source and destination must be different. The Send button is disabled if they're the same.
+    </Warning>
+  </Step>
+  
+  <Step title="Enter Amount">
+    In the **Quantity** field, specify how much to send:
+    
+    - **Token Amount**: Enter the amount in token units
+    - **USD Equivalent**: Auto-calculated in real-time using `useTokenConversion`
+    - **MAX Button**: Click to send your entire available balance
+  </Step>
+</Steps>
+
+### Real-Time USD Conversion
+
+The send modal includes dual input fields with automatic conversion:
+
+<CodeGroup>
+```tsx Token Input
+// User edits token amount
+const handleChangeValue = (tokenValue: string) => {
+  setValue(tokenValue);
+  if (tokenValue) {
+    const convertedUSD = convertToUSD(tokenValue);
+    setValueUSD(convertedUSD);
+  }
+};
+```
+
+```tsx USD Input
+// User edits USD amount
+const handleChangeUSD = (usdValue: string) => {
+  setValueUSD(usdValue);
+  if (usdValue) {
+    const convertedValue = convertFromUSD(usdValue);
+    setValue(convertedValue);
+  }
+};
+```
+</CodeGroup>
+
+The `useTokenConversion` hook provides:
+- **`convertToUSD`**: Converts token amount to USD value
+- **`convertFromUSD`**: Converts USD value to token amount
+- **`conversionRate`**: Current exchange rate
+
+<Note>
+  The USD equivalent updates automatically as you type in either field, using the `convertedInputFocused` state to track which field is active.
+</Note>
+
+### Send Validation
+
+The Send button is enabled only when:
+
+1. **Valid Amount**: Greater than zero and within available balance
+2. **Different Locations**: Source and destination are not the same
+3. **Sufficient Balance**: You have enough tokens to cover the transfer
+
+```tsx
+const conditionsSuccess =
+  isValidValue &&
+  fromSelector.options[fromSelector.selectedIndex]?.id !==
+    toSelector.options[toSelector.selectedIndex]?.id;
+```
+
+The `useValueVerifier` hook validates:
+- **Minimum**: Must be greater than 0
+- **Maximum**: Cannot exceed your available balance
+- **Non-Zero Requirement**: Enforced for all sends
+
+### Executing the Send
+
+<Steps>
+  <Step title="Review Details">
+    Double-check:
+    - Asset type and amount
+    - Source and destination
+    - USD equivalent value
+  </Step>
+  
+  <Step title="Click Send">
+    Click the **Send** button to execute the transfer.
+  </Step>
+  
+  <Step title="Confirmation">
+    The modal closes and the transaction is processed. Your portfolio balances update once the transaction completes.
+  </Step>
+</Steps>
+
+## Deposit Tracking
+
+### Monitoring Incoming Deposits
+
+<Steps>
+  <Step title="Send from External Wallet">
+    Initiate the transfer from your external wallet or exchange to the generated deposit address.
+  </Step>
+  
+  <Step title="Blockchain Confirmation">
+    Wait for blockchain confirmations. Required confirmations vary by network:
+    - Bitcoin: ~3-6 confirmations
+    - Ethereum: ~12 confirmations
+    - Polygon: ~128 confirmations
+    - Other networks: varies
+  </Step>
+  
+  <Step title="Balance Update">
+    Once confirmed, your Crocante portfolio balance automatically updates. The `usePortfolioData` hook polls balances at regular intervals.
+  </Step>
+  
+  <Step title="Check Activity">
+    View deposit details in the Activity section to see:
+    - Transaction hash
+    - Timestamp
+    - Amount deposited
+    - Network used
+  </Step>
+</Steps>
+
+<Info>
+  Deposit addresses are monitored continuously. You can reuse the same address for multiple deposits of the same token on the same network.
+</Info>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Verify Network" icon="network-wired">
+    Always double-check that the network you're sending from matches the network selected in Crocante.
+  </Card>
+  
+  <Card title="Check Minimums" icon="coins">
+    Ensure your deposit amount meets the minimum requirement to avoid lost funds.
+  </Card>
+  
+  <Card title="Test Small Amount" icon="flask">
+    For first-time deposits, consider sending a small test amount to verify the address.
+  </Card>
+  
+  <Card title="Save Addresses" icon="bookmark">
+    Bookmark or save frequently used deposit addresses for convenience (they remain valid).
+  </Card>
+  
+  <Card title="Wait for Confirmations" icon="clock">
+    Don't panic if deposits don't appear immediately - wait for blockchain confirmations.
+  </Card>
+  
+  <Card title="QR Code Scanning" icon="qrcode">
+    Use QR codes for mobile deposits to avoid manual entry errors.
+  </Card>
+</CardGroup>
+
+## Common Scenarios
+
+### Depositing USDC on Polygon
+
+<Steps>
+  <Step title="Select Asset Type: Crypto" />
+  <Step title="Select Token: USDC" />
+  <Step title="Select Network: Polygon" />
+  <Step title="Copy deposit address or scan QR code" />
+  <Step title="Send USDC from your Polygon wallet" />
+  <Step title="Wait for ~128 confirmations" />
+  <Step title="Balance appears in portfolio" />
+</Steps>
+
+### Withdrawing ETH to External Wallet
+
+<Steps>
+  <Step title="Click Send button" />
+  <Step title="Select Asset: ETH" />
+  <Step title="From: Internal Wallets" />
+  <Step title="To: External Address (paste address)" />
+  <Step title="Enter amount or click MAX" />
+  <Step title="Review and click Send" />
+  <Step title="Track transaction in Activity section" />
+</Steps>
+
+### Transferring Between Exchange and Wallet
+
+<Steps>
+  <Step title="Click Send button" />
+  <Step title="Select Asset: BTC" />
+  <Step title="From: Binance Exchange" />
+  <Step title="To: Internal Wallet" />
+  <Step title="Enter transfer amount" />
+  <Step title="Confirm and send" />
+</Steps>
+
+## Troubleshooting
+
+### Deposit Not Showing
+
+- **Check blockchain explorer**: Verify the transaction is confirmed
+- **Correct network**: Ensure you sent on the right network
+- **Minimum amount**: Confirm you sent more than the minimum
+- **Wait time**: Allow sufficient confirmations (can take 10-30 minutes)
+- **Refresh portfolio**: Manual browser refresh may help
+
+### Wrong Network Deposit
+
+<Warning>
+  If you sent assets on the wrong network (e.g., USDC on Ethereum instead of Polygon), contact support immediately. Recovery may not be possible for all wrong-network deposits.
+</Warning>
+
+### Send Button Disabled
+
+- **Check amount**: Must be > 0 and ≤ available balance
+- **Different locations**: From and To must be different
+- **Session active**: Ensure you're still logged in
+- **Loading complete**: Wait for conversion rates to load
+
+### QR Code Not Displaying
+
+- **Select all parameters**: Token and Network must both be selected
+- **Network supported**: Check if the network is currently supported
+- **Refresh modal**: Close and reopen the deposit modal
+- **Browser compatibility**: Ensure JavaScript is enabled
+
+### Minimum Deposit Not Met
+
+- Check the minimum amount displayed in the modal
+- Send at least the minimum to ensure processing
+- Contact support if the minimum seems incorrect
+
+## Security Considerations
+
+<Warning>
+  **Never share your deposit address with untrusted parties**. While deposit addresses are safe to share for receiving funds, verify the recipient source before accepting deposits.
+</Warning>
+
+- **Verify addresses**: Always double-check addresses before sending
+- **Phishing protection**: Only use deposit addresses generated within Crocante
+- **Network verification**: Confirm network compatibility before sending
+- **Secure your account**: Use strong passwords and enable 2FA when available
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Managing Assets" icon="chart-pie" href="/guides/managing-assets">
+    View your portfolio after deposits and track balances
+  </Card>
+  
+  <Card title="Token Conversion" icon="arrow-right-arrow-left" href="/guides/token-conversion">
+    Swap deposited assets to other cryptocurrencies
+  </Card>
+</CardGroup>

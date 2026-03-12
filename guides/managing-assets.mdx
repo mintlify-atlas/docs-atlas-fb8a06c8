@@ -1,0 +1,255 @@
+---
+title: 'Managing Assets'
+description: 'View balances, monitor portfolio performance, and organize your digital assets'
+icon: 'chart-pie'
+---
+
+## Overview
+
+The Crocante Portfolio section provides a comprehensive view of your digital asset holdings across multiple custodians, exchanges, wallets, and banks. This guide explains how to navigate and use the portfolio management features.
+
+## Portfolio Dashboard
+
+### Consolidated View
+
+The main portfolio page (`domain/portfolio/portfolio.tsx`) displays your **Consolidated View** - a unified snapshot of all your assets:
+
+<Steps>
+  <Step title="Total Balance">
+    The header displays your total portfolio value in USD, aggregated across all holdings. This uses the `usePortfolioData` hook to fetch and calculate balances.
+    
+    ```tsx
+    Total Balance: $1,234,567.89
+    ```
+  </Step>
+  
+  <Step title="Asset Breakdown">
+    View detailed holdings split into two categories:
+    - **Cryptocurrencies**: BTC, ETH, USDC, USDT, and other digital assets
+    - **Currencies**: Fiat currencies (USD, EUR, GBP, etc.) - available in mock mode
+  </Step>
+  
+  <Step title="Asset Allocation Chart">
+    A pie chart visualization showing the percentage distribution of your assets by type and value.
+  </Step>
+</Steps>
+
+## Viewing Cryptocurrency Holdings
+
+### Tokens Table
+
+The cryptocurrencies section uses the `TokensTable` component (`domain/portfolio/components/left-section/tokens-table.tsx`) to display:
+
+| Column | Description |
+|--------|-------------|
+| **Asset** | Token symbol (e.g., BTC, ETH) with icon and full name |
+| **Amount** | Total quantity of tokens held |
+| **Available** | Amount available for transactions (excluding locked/staked) |
+| **Value** | USD equivalent of your holdings |
+| **Change** | 24-hour price change percentage (green for positive, default for negative) |
+
+<Note>
+  By default, only tokens with non-zero balances are shown. Click **More tokens** to view all supported assets, including those with zero balance.
+</Note>
+
+### Expand/Collapse Sections
+
+Each asset category can be expanded or collapsed:
+
+<Steps>
+  <Step title="Click Section Header">
+    Click the **Cryptocurrencies** or **Currencies** header button to toggle visibility.
+  </Step>
+  
+  <Step title="View Total Value">
+    Each section header displays the total value for that category, even when collapsed.
+  </Step>
+</Steps>
+
+## Portfolio Actions
+
+The portfolio header includes four primary action buttons accessible via the `CustomAdditionalHeader` component:
+
+### Available Actions
+
+<CardGroup cols={2}>
+  <Card title="Send" icon="paper-plane">
+    Transfer assets between your wallets, exchanges, or to external addresses.
+  </Card>
+  
+  <Card title="Deposit" icon="download">
+    Generate deposit addresses to receive assets into your Crocante account.
+  </Card>
+  
+  <Card title="Swap" icon="arrow-right-arrow-left">
+    Convert between different cryptocurrencies instantly.
+  </Card>
+  
+  <Card title="Staking" icon="coins">
+    Stake eligible tokens to earn rewards.
+  </Card>
+</CardGroup>
+
+<Info>
+  On mobile devices, these actions are accessible through a menu icon in the top-right corner.
+</Info>
+
+## Asset Holdings by Location
+
+The bottom section of the portfolio uses the `TabsSection` component to organize assets by where they're held:
+
+### Tabs Overview
+
+<Tabs>
+  <Tab title="Internal Wallets">
+    Assets held in Crocante's custody wallets:
+    - On-chain cryptocurrency holdings
+    - Multi-network support (Ethereum, Polygon, Arbitrum, etc.)
+    - Full control and instant access
+  </Tab>
+  
+  <Tab title="Exchanges">
+    Assets connected from cryptocurrency exchanges:
+    - Binance
+    - Coinbase
+    - Kraken
+    - And other supported platforms
+  </Tab>
+  
+  <Tab title="Custodians">
+    Assets held with institutional custodians:
+    - Fireblocks
+    - BitGo
+    - Anchorage
+    - Other qualified custodians
+  </Tab>
+  
+  <Tab title="Banks">
+    Fiat currency holdings in connected bank accounts:
+    - USD, EUR, GBP balances
+    - Bank account details
+    - Available for on/off-ramp operations
+  </Tab>
+  
+  <Tab title="OTC Desks">
+    Assets allocated through over-the-counter trading desks for large transactions.
+  </Tab>
+</Tabs>
+
+## Monitoring Portfolio Performance
+
+### Real-Time Updates
+
+The portfolio uses several hooks to keep data fresh:
+
+- **`usePortfolioData`**: Polls portfolio balances at regular intervals
+- **`POLL_USER_DATA_INTERVAL`**: Configured interval for automatic data refreshes
+- **Live Price Updates**: Asset values update automatically based on market prices
+
+<Warning>
+  Portfolio data is cached for performance. If you make a transaction on an external platform, it may take a few moments to reflect in your Crocante portfolio.
+</Warning>
+
+### Price Change Indicators
+
+The **Change** column in the tokens table uses visual indicators:
+
+- **Green text with "+"**: Price increased in the last 24 hours
+- **Default text**: Price decreased or remained stable
+- **"-"**: No price data available
+
+## Filtering and Sorting
+
+### Show/Hide Zero Balances
+
+<Steps>
+  <Step title="Default View">
+    By default, the tokens table filters out assets with zero balance to reduce clutter.
+  </Step>
+  
+  <Step title="Show All Assets">
+    Click the **More tokens** button (with a plus icon) to display all supported cryptocurrencies, including those you don't currently hold.
+  </Step>
+  
+  <Step title="Hide Zero Balances">
+    Click **Less tokens** (with a minus icon) to return to the filtered view showing only assets you hold.
+  </Step>
+</Steps>
+
+## Understanding Asset States
+
+### Available vs. Total Amount
+
+Your tokens can be in different states:
+
+- **Total Amount**: Complete quantity of tokens you own
+- **Available**: Tokens available for immediate transactions
+- **Difference**: Tokens that are locked, staked, or pending in transactions
+
+<Info>
+  If your Available amount is less than your Total amount, check the Staking section to see if tokens are actively earning rewards.
+</Info>
+
+## Mobile Portfolio View
+
+On mobile devices, the portfolio layout adapts:
+
+- Consolidated view displays vertically
+- Asset allocation chart moves below the breakdown tables
+- Action buttons collapse into a hamburger menu
+- Tables remain scrollable horizontally for all columns
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Regular Monitoring" icon="chart-line">
+    Check your portfolio regularly to track performance and detect unauthorized transactions.
+  </Card>
+  
+  <Card title="Diversification" icon="scale-balanced">
+    Use the asset allocation chart to ensure your portfolio is properly diversified across different assets.
+  </Card>
+  
+  <Card title="Available Balance" icon="circle-check">
+    Always check your Available balance before initiating transactions to ensure sufficient funds.
+  </Card>
+  
+  <Card title="Price Alerts" icon="bell">
+    Monitor the Change column to track price movements of your holdings.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Portfolio Not Loading
+
+- Check your internet connection
+- Refresh the page to reload portfolio data
+- Ensure you're still logged in (session may have expired)
+- Clear browser cache if issues persist
+
+### Missing Assets
+
+- Click **More tokens** to check if the asset is supported
+- Verify the deposit was confirmed on the blockchain
+- Check the appropriate tab (Internal Wallets vs. Exchanges)
+- Allow a few minutes for blockchain confirmations
+
+### Incorrect Balances
+
+- Wait for the next automatic refresh cycle
+- Manually refresh your browser
+- Verify transactions completed successfully on the blockchain
+- Contact support if discrepancies persist after 10 minutes
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Token Conversion" icon="arrow-right-arrow-left" href="/guides/token-conversion">
+    Learn how to swap between different cryptocurrencies
+  </Card>
+  
+  <Card title="Deposit & Withdrawal" icon="money-bill-transfer" href="/guides/deposit-withdrawal">
+    Add funds or withdraw assets from your portfolio
+  </Card>
+</CardGroup>

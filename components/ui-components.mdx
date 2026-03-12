@@ -1,0 +1,571 @@
+---
+title: 'UI Components'
+description: 'Core UI components for building the Crocante platform'
+---
+
+## Overview
+
+The Crocante platform provides a comprehensive set of reusable UI components. All components are fully typed with TypeScript and follow consistent design patterns.
+
+## Button
+
+Flexible button component with multiple variants and loading states.
+
+### Props
+
+```typescript
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  isLoading?: boolean;
+  className?: string;
+  isActive?: boolean;
+}
+
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "outline"
+  | "outline-secondary"
+  | "nav"
+  | "avatar-outline";
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Usage
+import { Button } from "@/components";
+
+<Button variant="primary" onClick={handleSubmit}>
+  Submit
+</Button>
+```
+
+```tsx With Loading State
+<Button 
+  variant="primary" 
+  isLoading={isSubmitting}
+  disabled={isSubmitting}
+>
+  Processing...
+</Button>
+```
+
+```tsx Navigation Button
+<Button 
+  variant="nav" 
+  isActive={activeMenu === "portfolio"}
+  onClick={() => navigate("/portfolio")}
+>
+  Portfolio
+</Button>
+```
+</CodeGroup>
+
+### Features
+
+- **Loading State**: Displays spinner when `isLoading` is true
+- **Variants**: 7 different visual styles
+- **Active State**: Special highlighting for navigation
+- **Disabled State**: Automatic styling for disabled buttons
+
+## Input
+
+Versatile input component with validation, icons, and password visibility toggle.
+
+### Props
+
+```typescript
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  type?: "text" | "email" | "password" | "number";
+  label?: string;
+  noEdit?: boolean;
+  max?: number;
+  onMaxClick?: () => void;
+  validation?: "invalid" | "success" | null;
+  validationMessage?: string;
+  secondaryLabel?: string;
+  secondaryLabelAlign?: "left" | "right";
+  complexLabel?: {
+    leftText: string;
+    icon: React.ReactNode;
+    rightText: string;
+    align?: "left" | "right";
+    tooltip?: string;
+  };
+  leftIcon?: React.ReactNode;
+  noBottomSpace?: boolean;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Input
+import { Input } from "@/components";
+
+<Input
+  label="Email"
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  placeholder="your@email.com"
+/>
+```
+
+```tsx With Validation
+<Input
+  label="Amount"
+  type="number"
+  value={amount}
+  onChange={handleAmountChange}
+  validation={isValid ? "success" : "invalid"}
+  validationMessage={isValid ? "Valid amount" : "Insufficient balance"}
+/>
+```
+
+```tsx Password Input
+<Input
+  label="Password"
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  placeholder="Enter password"
+/>
+```
+
+```tsx With Max Button
+<Input
+  label="Transfer Amount"
+  type="number"
+  value={amount}
+  onChange={handleChange}
+  max={balance}
+  onMaxClick={() => setAmount(balance.toString())}
+  secondaryLabel={`Balance: ${balance}`}
+  secondaryLabelAlign="right"
+/>
+```
+</CodeGroup>
+
+### Features
+
+- **Password Toggle**: Eye icon to show/hide password
+- **Validation States**: Success and error states with icons
+- **Max Button**: Quick fill with maximum value
+- **Left Icon**: Support for icon prefix
+- **Secondary Label**: Additional context below input
+
+## Select
+
+Dropdown select component with icon support.
+
+### Props
+
+```typescript
+interface SelectOption {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  value?: string;
+}
+
+interface SelectorProps {
+  selectedIndex: number;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: Array<SelectOption>;
+}
+
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  className?: string;
+  secondaryLabel?: string;
+  secondaryLabelAlign?: "left" | "right";
+  block?: boolean;
+  properties: SelectorProps;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Select
+import { Select } from "@/components";
+
+const options = [
+  { id: "btc", label: "Bitcoin" },
+  { id: "eth", label: "Ethereum" },
+  { id: "usdc", label: "USD Coin" }
+];
+
+<Select
+  label="Select Token"
+  properties={{
+    selectedIndex: 0,
+    options,
+    onChange: handleTokenChange
+  }}
+/>
+```
+
+```tsx With Icons
+const options = [
+  { id: "btc", label: "Bitcoin", icon: <BitcoinIcon /> },
+  { id: "eth", label: "Ethereum", icon: <EthereumIcon /> }
+];
+
+<Select
+  label="Token"
+  properties={{
+    selectedIndex: selectedIdx,
+    options,
+    onChange: handleChange
+  }}
+  secondaryLabel="Available: 1.5 BTC"
+  secondaryLabelAlign="right"
+/>
+```
+</CodeGroup>
+
+## Modal
+
+Flexible modal component with responsive design and portal rendering.
+
+### Props
+
+```typescript
+interface ModalProps {
+  title: string;
+  icon?: React.ReactNode;
+  statusIcon?: React.ReactNode;
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+  actions?: () => React.ReactNode;
+  blockClose?: boolean;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Modal
+import { Modal } from "@/components";
+
+<Modal
+  title="Transfer Funds"
+  open={isOpen}
+  onClose={handleClose}
+>
+  <p>Enter transfer details:</p>
+  <Input label="Amount" />
+  <Input label="Recipient" />
+</Modal>
+```
+
+```tsx With Actions
+<Modal
+  title="Confirm Transaction"
+  icon={<CheckCircleIcon />}
+  open={isOpen}
+  onClose={handleClose}
+  actions={() => (
+    <>
+      <Button variant="outline" onClick={handleClose}>
+        Cancel
+      </Button>
+      <Button variant="primary" onClick={handleConfirm}>
+        Confirm
+      </Button>
+    </>
+  )}
+>
+  <p>Please confirm your transaction</p>
+</Modal>
+```
+
+```tsx Blocked Close
+<Modal
+  title="Processing..."
+  open={isProcessing}
+  onClose={() => {}}
+  blockClose={true}
+>
+  <p>Please wait while we process your request</p>
+</Modal>
+```
+</CodeGroup>
+
+### Features
+
+- **Portal Rendering**: Renders in `document.body`
+- **Responsive**: Bottom sheet on mobile, centered on desktop
+- **Backdrop Click**: Close on backdrop click (unless blocked)
+- **Custom Actions**: Footer action buttons
+- **Icons**: Title icon and status icon support
+
+## Table
+
+Advanced table component with filtering, sorting, and responsive scrolling.
+
+### Props
+
+```typescript
+interface TableHeader {
+  id: string;
+  label: string;
+  className?: string;
+}
+
+interface TableCell {
+  id: string;
+  value?: string;
+  subtitle?: string;
+  highlight?: boolean;
+  className?: string;
+  leftIcon?: () => React.ReactNode;
+}
+
+interface TableRow {
+  id: string;
+  cells: TableCell[];
+  className?: string;
+  onClick?: () => void;
+}
+
+interface TableProps {
+  tableHeaders: TableHeader[];
+  rows: TableRow[];
+  filters?: TableFiltersProps;
+  isLoading?: boolean;
+  className?: string;
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Table
+import { Table } from "@/components";
+
+const headers = [
+  { id: "date", label: "Date" },
+  { id: "type", label: "Type" },
+  { id: "amount", label: "Amount", className: "text-right" }
+];
+
+const rows = [
+  {
+    id: "1",
+    cells: [
+      { id: "date", value: "2026-03-12" },
+      { id: "type", value: "Deposit" },
+      { id: "amount", value: "1,000.00", highlight: true }
+    ],
+    onClick: () => handleRowClick("1")
+  }
+];
+
+<Table tableHeaders={headers} rows={rows} />
+```
+
+```tsx With Loading State
+<Table 
+  tableHeaders={headers} 
+  rows={rows}
+  isLoading={isFetching}
+/>
+```
+
+```tsx With Icons
+const rows = [
+  {
+    id: "1",
+    cells: [
+      {
+        id: "token",
+        value: "Bitcoin",
+        subtitle: "BTC",
+        leftIcon: () => <BitcoinIcon />
+      },
+      { id: "balance", value: "1.5 BTC" }
+    ]
+  }
+];
+
+<Table tableHeaders={headers} rows={rows} />
+```
+</CodeGroup>
+
+### Features
+
+- **Responsive Scrolling**: Horizontal scroll on mobile with arrow navigation
+- **Vertical Scrolling**: Smooth scrolling with up/down indicators
+- **Loading State**: Skeleton placeholder during data fetch
+- **Row Click**: Interactive rows with hover states
+- **Cell Formatting**: Subtitles, highlights, and icons
+
+## Card
+
+Simple card container component.
+
+### Props
+
+```typescript
+interface CardProps {
+  leftIcon?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  variant?: "default" | "fund";
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Card
+import { Card } from "@/components";
+
+<Card>
+  <h3>Portfolio Value</h3>
+  <p>$125,000.00</p>
+</Card>
+```
+
+```tsx With Icon
+<Card leftIcon={<WalletIcon />}>
+  <p>Total Balance</p>
+  <h2>$50,000</h2>
+</Card>
+```
+</CodeGroup>
+
+## Tabs
+
+Tab navigation component.
+
+### Props
+
+```typescript
+interface TabsProps {
+  TabValues: Record<string, string>;
+  selectedRow?: string;
+  onChange?: (selectedRow: string) => void;
+}
+```
+
+### Usage
+
+```tsx
+import { Tabs } from "@/components";
+
+const tabValues = {
+  portfolio: "Portfolio",
+  activity: "Activity",
+  staking: "Staking"
+};
+
+<Tabs
+  TabValues={tabValues}
+  selectedRow={activeTab}
+  onChange={setActiveTab}
+/>
+```
+
+## Tooltip
+
+Contextual tooltip component with multiple positions and variants.
+
+### Props
+
+```typescript
+type TooltipPosition = "top" | "bottom" | "left" | "right" | "auto";
+type TooltipVariant = "default" | "info" | "warning" | "error" | "success";
+
+interface TooltipProps {
+  content: React.ReactNode;
+  children: React.ReactNode;
+  position?: TooltipPosition;
+  variant?: TooltipVariant;
+  delay?: number;
+  disabled?: boolean;
+  className?: string;
+  trigger?: "hover" | "click" | "focus";
+}
+```
+
+### Usage
+
+<CodeGroup>
+```tsx Basic Tooltip
+import { Tooltip } from "@/components";
+
+<Tooltip content="This is a helpful tooltip">
+  <button>Hover me</button>
+</Tooltip>
+```
+
+```tsx Auto-positioned
+<Tooltip 
+  content="Smart positioning" 
+  position="auto"
+  variant="info"
+>
+  <InfoIcon />
+</Tooltip>
+```
+
+```tsx Click Trigger
+<Tooltip 
+  content="Click to see details"
+  trigger="click"
+  delay={0}
+>
+  <HelpIcon />
+</Tooltip>
+```
+</CodeGroup>
+
+### Features
+
+- **Auto-positioning**: Automatically positions to stay in viewport
+- **Multiple Variants**: Different colors for different contexts
+- **Trigger Options**: Hover, click, or focus
+- **Configurable Delay**: Control tooltip show delay
+
+## Skeleton
+
+Loading placeholder component.
+
+### Props
+
+```typescript
+interface SkeletonProps {
+  lines?: number;
+}
+```
+
+### Usage
+
+```tsx
+import { Skeleton } from "@/components";
+
+{isLoading ? (
+  <Skeleton lines={3} />
+) : (
+  <Content />
+)}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Hooks" icon="hook" href="/components/hooks">
+    Learn about React hooks
+  </Card>
+  <Card title="Context Providers" icon="share-nodes" href="/components/context">
+    Understand context providers
+  </Card>
+</CardGroup>

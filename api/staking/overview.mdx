@@ -1,0 +1,131 @@
+---
+title: 'Staking Overview'
+description: 'Earn yield on your cryptocurrency holdings through flexible and fixed-term staking products'
+---
+
+## Introduction
+
+The Staking API allows users to stake their cryptocurrency holdings and earn yield over time. Crocante Financial Platform offers both flexible (variable APY) and fixed-term staking products across multiple cryptocurrencies.
+
+## How Staking Works
+
+Staking on the Crocante platform follows this lifecycle:
+
+1. **Browse Available Products** - Query available staking types to see supported cryptocurrencies, APY rates, and terms
+2. **Create Stake** - Lock your cryptocurrency into a staking position
+3. **Earn Yield** - Your position accumulates yield over time based on the APY
+4. **Redeem Position** - Unlock your staked amount plus accumulated yield
+
+## Staking Modes
+
+The platform supports two staking modes:
+
+### Variable Staking
+- Flexible duration with no fixed lock-up period
+- Variable APY that may change over time
+- Can be redeemed at any time (check `redeemableAt` field)
+- Ideal for users who want liquidity flexibility
+
+### Fixed Staking
+- Fixed duration specified in days (`durationDays`)
+- Fixed APY guaranteed for the entire duration
+- Can only be redeemed after the lock-up period ends
+- Higher APY rates in exchange for commitment
+
+## Key Concepts
+
+### Staking Types
+
+Each staking product is identified by a `typeId` and defines:
+- `currencyId` - The cryptocurrency that can be staked (e.g., BTC, ETH, USDT)
+- `mode` - Either `VARIABLE` or `FIXED`
+- `apy` - Annual Percentage Yield as a decimal string
+- `minAmount` - Minimum amount required to stake
+- `durationDays` - Lock-up period in days (only for FIXED mode)
+
+### Staking Operations
+
+Each stake creates an `operation` record that tracks:
+- Operation ID and timestamps (`openedAt`, `updatedAt`, `closedAt`)
+- Status (`Active` or `Redeemed`)
+- Owner and creator information
+
+### Yield Calculation
+
+Staking positions track multiple yield metrics:
+- `yield` - Current accumulated yield
+- `estRedeemYield` - Estimated yield at redemption time
+- `initialAPY` - APY at time of stake creation
+- `apy` - Current APY (may differ for variable products)
+
+## API Endpoints
+
+The Staking API consists of five endpoints:
+
+| Endpoint | Method | Purpose |
+|----------|--------|----------|
+| `EP_STAKING_TYPE` | GET | List available staking products |
+| `EP_STAKING` | POST | Create a new stake |
+| `EP_STAKING_ACTIVE` | GET | List active staking positions |
+| `EP_STAKING_REDEEMED` | GET | List redeemed staking positions |
+| `EP_STAKING_REDEEM` | POST | Redeem an active stake |
+
+See the [Operations](/api/staking/operations) page for detailed endpoint specifications.
+
+## Typical Workflow
+
+```typescript
+// 1. Fetch available staking types
+const stakingTypes = await fetch(EP_STAKING_TYPE);
+const btcStaking = stakingTypes.find(t => t.currencyId === 'BTC' && t.mode === 'FIXED');
+
+// 2. Create a stake
+await fetch(EP_STAKING, {
+  method: 'POST',
+  body: JSON.stringify({
+    typeId: btcStaking.id,
+    amount: '0.5' // 0.5 BTC
+  })
+});
+
+// 3. Monitor active positions
+const activeStakes = await fetch(`${EP_STAKING_ACTIVE}?page=0&size=10`);
+
+// 4. Redeem when ready
+const opId = activeStakes.data[0].operation.id;
+await fetch(EP_STAKING_REDEEM.replace('%OPID', opId), {
+  method: 'POST'
+});
+```
+
+## Response Format
+
+All staking endpoints follow a consistent response structure:
+
+```typescript
+{
+  data: T,        // Response data (array or object)
+  status: number  // HTTP status code
+}
+```
+
+## Error Handling
+
+Staking operations may fail for several reasons:
+- Insufficient balance for the staking amount
+- Amount below `minAmount` threshold
+- Attempting to redeem before `redeemableAt` date
+- Invalid `typeId` or `opId`
+
+Always validate staking type requirements before creating a stake.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Staking Types" icon="shapes" href="/api/staking/types">
+    Explore available staking products and their parameters
+  </Card>
+  <Card title="Operations" icon="code" href="/api/staking/operations">
+    Learn the API endpoints for staking operations
+  </Card>
+</CardGroup>

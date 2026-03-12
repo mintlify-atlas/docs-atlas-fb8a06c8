@@ -1,0 +1,158 @@
+---
+title: 'Login'
+api: 'POST /api/auth/login'
+description: 'Authenticate a user and create a new session'
+---
+
+## Overview
+
+Authenticates a user with username and password credentials. On successful authentication, the API creates an encrypted session cookie (`crocante_session`) that is used for subsequent authenticated requests.
+
+The endpoint acts as a Backend-for-Frontend (BFF) proxy, forwarding credentials to the backend authentication service and storing the resulting access token in a secure, HTTP-only cookie.
+
+## Request
+
+<ParamField body="username" type="string" required>
+  The user's username or email address
+</ParamField>
+
+<ParamField body="password" type="string">
+  The user's password. Optional for certain authentication flows
+</ParamField>
+
+<ParamField body="totpCode" type="string">
+  Time-based one-time password (TOTP) code for two-factor authentication. Required if 2FA is enabled for the user
+</ParamField>
+
+### Request Example
+
+```json
+{
+  "username": "user@example.com",
+  "password": "securePassword123",
+  "totpCode": "123456"
+}
+```
+
+## Response
+
+### Success Response (200)
+
+On successful authentication, the API returns a success indicator and sets the session cookie.
+
+<ResponseField name="success" type="boolean">
+  Always `true` on successful login
+</ResponseField>
+
+```json
+{
+  "success": true
+}
+```
+
+#### Session Cookie
+
+The response includes a `Set-Cookie` header with the following attributes:
+
+- **Name**: `crocante_session`
+- **Value**: Encrypted session payload containing the access token and issuance timestamp
+- **Max-Age**: 300 seconds (5 minutes)
+- **HttpOnly**: `true` (prevents JavaScript access)
+- **Secure**: `true` in production (HTTPS only)
+- **SameSite**: `Strict` (CSRF protection)
+- **Path**: `/`
+
+### Error Responses
+
+<ResponseField name="error" type="string">
+  A human-readable error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="details" type="object">
+  Validation error details when request format is invalid
+</ResponseField>
+
+#### 400 Bad Request
+
+Returned when the request body fails validation.
+
+```json
+{
+  "error": "Invalid request",
+  "details": {
+    "formErrors": [],
+    "fieldErrors": {
+      "username": ["Username is required"]
+    }
+  }
+}
+```
+
+#### 401 Unauthorized
+
+Returned when authentication credentials are invalid.
+
+```json
+{
+  "error": "Login failed"
+}
+```
+
+#### 500 Internal Server Error
+
+Returned when an unexpected error occurs during authentication.
+
+```json
+{
+  "error": "Login failed"
+}
+```
+
+## Authentication Flow
+
+1. Client submits credentials to `/api/auth/login`
+2. BFF validates request format using Zod schema
+3. BFF forwards credentials to backend authentication service
+4. Backend validates credentials and returns access token
+5. BFF encrypts token with issuance timestamp
+6. BFF sets encrypted session cookie and returns success response
+7. Client automatically includes cookie in subsequent requests
+
+## Security Considerations
+
+- Access tokens are never exposed to client JavaScript
+- Session cookies are encrypted using AES-256-GCM
+- Cookies are HTTP-only to prevent XSS attacks
+- Strict SameSite policy prevents CSRF attacks
+- Sessions expire after 5 minutes of inactivity
+- Secure flag ensures HTTPS-only transmission in production
+
+## Code Example
+
+```typescript
+import { LoginService } from '@/services/api/auth/login-service';
+
+try {
+  const result = await LoginService.login({
+    username: 'user@example.com',
+    password: 'securePassword123',
+    totpCode: '123456' // Optional, for 2FA
+  });
+  
+  console.log('Login successful:', result.success);
+  // Session cookie is automatically stored by browser
+} catch (error) {
+  console.error('Login failed:', error);
+}
+```
+
+```bash
+curl -X POST https://api.crocante.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "username": "user@example.com",
+    "password": "securePassword123"
+  }' \
+  -c cookies.txt
+```

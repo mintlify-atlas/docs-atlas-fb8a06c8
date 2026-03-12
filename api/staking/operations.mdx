@@ -1,0 +1,529 @@
+---
+title: 'Staking Operations'
+description: 'API endpoints for creating stakes, viewing positions, and redeeming rewards'
+---
+
+## Overview
+
+The Staking API provides five endpoints for managing cryptocurrency staking operations. All endpoints use authentication via session cookies and return data in a consistent format.
+
+## Endpoints
+
+### List Staking Types
+
+Retrieve all available staking products and their configurations.
+
+```
+GET {EP_STAKING_TYPE}
+```
+
+#### Response
+
+<ResponseField name="data" type="StakingTypeItem[]" required>
+  Array of available staking products. See [Staking Types](/api/staking/types#stakingtypeitem-interface) for field details.
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code (typically 200).
+</ResponseField>
+
+#### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "stake_btc_fixed_90",
+      "currencyId": "BTC",
+      "mode": "FIXED",
+      "apy": "0.08",
+      "minAmount": "0.001",
+      "durationDays": 90
+    },
+    {
+      "id": "stake_eth_variable",
+      "currencyId": "ETH",
+      "mode": "VARIABLE",
+      "apy": "0.05",
+      "minAmount": "0.1"
+    },
+    {
+      "id": "stake_usdt_fixed_30",
+      "currencyId": "USDT",
+      "mode": "FIXED",
+      "apy": "0.06",
+      "minAmount": "100",
+      "durationDays": 30
+    },
+    {
+      "id": "stake_sol_variable",
+      "currencyId": "SOL",
+      "mode": "VARIABLE",
+      "apy": "0.07",
+      "minAmount": "1"
+    }
+  ],
+  "status": 200
+}
+```
+
+#### Usage
+
+```typescript
+const response = await fetch(EP_STAKING_TYPE);
+const { data: stakingTypes } = await response.json();
+
+// Find BTC staking options
+const btcProducts = stakingTypes.filter(t => t.currencyId === 'BTC');
+
+// Find fixed-term products
+const fixedProducts = stakingTypes.filter(t => t.mode === 'FIXED');
+```
+
+---
+
+### Create Stake
+
+Create a new staking position by locking cryptocurrency.
+
+```
+POST {EP_STAKING}
+```
+
+#### Request Body
+
+<ParamField path="typeId" type="string" required>
+  The ID of the staking product to use. Obtain from the List Staking Types endpoint.
+</ParamField>
+
+<ParamField path="amount" type="string" required>
+  The amount to stake, specified as a decimal string. Must be greater than or equal to the product's `minAmount`.
+</ParamField>
+
+#### Response
+
+<ResponseField name="data" type="object" required>
+  Empty object `{}` on success.
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code (201 on success).
+</ResponseField>
+
+#### Example Request
+
+```typescript
+// Stake 0.5 BTC in a 90-day fixed product
+const response = await fetch(EP_STAKING, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    typeId: 'stake_btc_fixed_90',
+    amount: '0.5'
+  })
+});
+
+const result = await response.json();
+// { data: {}, status: 201 }
+```
+
+#### Example: Staking Different Cryptocurrencies
+
+```typescript
+// Stake Ethereum
+await fetch(EP_STAKING, {
+  method: 'POST',
+  body: JSON.stringify({
+    typeId: 'stake_eth_variable',
+    amount: '5.0'
+  })
+});
+
+// Stake USDT
+await fetch(EP_STAKING, {
+  method: 'POST',
+  body: JSON.stringify({
+    typeId: 'stake_usdt_fixed_30',
+    amount: '1000'
+  })
+});
+
+// Stake Solana
+await fetch(EP_STAKING, {
+  method: 'POST',
+  body: JSON.stringify({
+    typeId: 'stake_sol_variable',
+    amount: '50'
+  })
+});
+```
+
+#### Validation
+
+The endpoint validates:
+- User has sufficient balance of the specified cryptocurrency
+- `amount` meets the minimum requirement (`minAmount`)
+- `typeId` exists and is active
+
+---
+
+### List Active Stakes
+
+Retrieve paginated list of active (unredeemed) staking positions.
+
+```
+GET {EP_STAKING_ACTIVE}?page={page}&size={size}
+```
+
+#### Query Parameters
+
+<ParamField query="page" type="number" default="0">
+  Zero-based page number for pagination.
+</ParamField>
+
+<ParamField query="size" type="number" default="10">
+  Number of results per page.
+</ParamField>
+
+#### Response
+
+<ResponseField name="data" type="StakingData[]" required>
+  Array of active staking positions. See [Staking Types](/api/staking/types#stakingdata-interface) for field details.
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code (typically 200).
+</ResponseField>
+
+#### Example Response
+
+```json
+{
+  "data": [
+    {
+      "typeId": "stake_btc_fixed_90",
+      "startsAt": "2026-01-15T10:30:00Z",
+      "redeemableAt": "2026-04-15T10:30:00Z",
+      "initialAmount": "0.5",
+      "initialAPY": "0.08",
+      "operation": {
+        "id": "op_stake_abc123",
+        "creatorId": "user_123",
+        "ownerId": "user_123",
+        "openedAt": "2026-01-15T10:30:00Z",
+        "updatedAt": "2026-03-12T14:20:00Z",
+        "closedAt": null,
+        "status": "Active",
+        "type": "STAKE",
+        "fullType": "STAKE_FIXED"
+      },
+      "type": {
+        "id": "stake_btc_fixed_90",
+        "currencyId": "BTC",
+        "mode": "FIXED",
+        "apy": "0.08",
+        "minAmount": "0.001",
+        "durationDays": 90
+      },
+      "amount": "0.5",
+      "yield": "0.00987",
+      "estRedeemYield": "0.01096",
+      "apy": "0.08"
+    }
+  ],
+  "status": 200
+}
+```
+
+#### Usage
+
+```typescript
+// Fetch first page of active stakes
+const response = await fetch(`${EP_STAKING_ACTIVE}?page=0&size=10`);
+const { data: activeStakes } = await response.json();
+
+// Check if any stakes are ready to redeem
+const redeemableNow = activeStakes.filter(stake => {
+  return stake.redeemableAt && new Date(stake.redeemableAt) <= new Date();
+});
+
+// Calculate total staked by currency
+const totalsBycurrency = activeStakes.reduce((acc, stake) => {
+  const currency = stake.type.currencyId;
+  acc[currency] = (acc[currency] || 0) + parseFloat(stake.amount);
+  return acc;
+}, {});
+```
+
+---
+
+### List Redeemed Stakes
+
+Retrieve paginated list of redeemed (closed) staking positions.
+
+```
+GET {EP_STAKING_REDEEMED}?page={page}&size={size}
+```
+
+#### Query Parameters
+
+<ParamField query="page" type="number" default="0">
+  Zero-based page number for pagination.
+</ParamField>
+
+<ParamField query="size" type="number" default="10">
+  Number of results per page.
+</ParamField>
+
+#### Response
+
+<ResponseField name="data" type="StakingData[]" required>
+  Array of redeemed staking positions. Fields are the same as active stakes, but `operation.closedAt` is populated and `redeemableAt` may be null.
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code (typically 200).
+</ResponseField>
+
+#### Example Response
+
+```json
+{
+  "data": [
+    {
+      "typeId": "stake_eth_variable",
+      "startsAt": "2025-12-01T08:00:00Z",
+      "redeemableAt": null,
+      "initialAmount": "5.0",
+      "initialAPY": "0.045",
+      "operation": {
+        "id": "op_stake_xyz789",
+        "creatorId": "user_123",
+        "ownerId": "user_123",
+        "openedAt": "2025-12-01T08:00:00Z",
+        "updatedAt": "2026-02-15T11:30:00Z",
+        "closedAt": "2026-02-15T11:30:00Z",
+        "status": "Redeemed",
+        "type": "STAKE",
+        "fullType": "STAKE_VARIABLE"
+      },
+      "type": {
+        "id": "stake_eth_variable",
+        "currencyId": "ETH",
+        "mode": "VARIABLE",
+        "apy": "0.05",
+        "minAmount": "0.1"
+      },
+      "amount": "5.0",
+      "yield": "0.0486",
+      "estRedeemYield": "0.0486",
+      "apy": "0.05"
+    }
+  ],
+  "status": 200
+}
+```
+
+#### Usage
+
+```typescript
+// Fetch redeemed stakes
+const response = await fetch(`${EP_STAKING_REDEEMED}?page=0&size=10`);
+const { data: redeemedStakes } = await response.json();
+
+// Calculate total yield earned
+const totalYield = redeemedStakes.reduce((sum, stake) => {
+  return sum + parseFloat(stake.yield);
+}, 0);
+```
+
+---
+
+### Redeem Stake
+
+Redeem an active staking position, returning the principal plus accumulated yield.
+
+```
+POST {EP_STAKING_REDEEM}
+```
+
+<Note>
+The endpoint URL includes a placeholder `%OPID` that must be replaced with the operation ID.
+</Note>
+
+#### URL Parameters
+
+The endpoint pattern is: `{EP_STAKING_REDEEM}` where `%OPID` is replaced with the operation ID.
+
+<ParamField path="opId" type="string" required>
+  The operation ID of the stake to redeem. Found in `operation.id` from the active stakes list.
+</ParamField>
+
+#### Request Body
+
+Empty object `{}`.
+
+#### Response
+
+<ResponseField name="data" type="object" required>
+  Empty object `{}` on success.
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code (200 on success).
+</ResponseField>
+
+#### Example Request
+
+```typescript
+// Get active stakes
+const activeResponse = await fetch(`${EP_STAKING_ACTIVE}?page=0&size=10`);
+const { data: activeStakes } = await activeResponse.json();
+
+// Redeem the first stake
+const opId = activeStakes[0].operation.id;
+const url = EP_STAKING_REDEEM.replace('%OPID', opId);
+
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({})
+});
+
+const result = await response.json();
+// { data: {}, status: 200 }
+```
+
+#### Validation
+
+The endpoint validates:
+- Operation ID exists and belongs to the authenticated user
+- Stake is in `Active` status
+- Current time is after `redeemableAt` (for FIXED mode stakes)
+
+#### Post-Redemption
+
+After redemption:
+- The stake moves from active to redeemed status
+- Principal + yield are credited to the user's balance
+- The operation's `closedAt` timestamp is set
+- The stake appears in the redeemed stakes list
+
+---
+
+## Complete Workflow Example
+
+Here's a complete example showing the full staking lifecycle:
+
+```typescript
+import { 
+  useStakingType, 
+  useStaking, 
+  usePostStaking, 
+  usePostStakingRedeem 
+} from '@/services/hooks';
+
+function StakingDashboard({ userId }: { userId: string }) {
+  // 1. Load available staking products
+  const { data: stakingTypes } = useStakingType(userId, 0);
+  
+  // 2. Load active positions
+  const { data: activeStakes } = useStaking(userId, 0, "Active", 60000);
+  
+  // 3. Setup mutation hooks
+  const { mutate: createStake } = usePostStaking();
+  const { mutate: redeemStake } = usePostStakingRedeem();
+  
+  // 4. Create a new BTC stake
+  const handleStakeBTC = () => {
+    const btcProduct = stakingTypes?.find(
+      t => t.currencyId === 'BTC' && t.mode === 'FIXED' && t.durationDays === 90
+    );
+    
+    if (btcProduct) {
+      createStake({
+        userId,
+        typeId: btcProduct.id,
+        amount: '0.5'
+      });
+    }
+  };
+  
+  // 5. Redeem a stake when ready
+  const handleRedeem = (opId: string) => {
+    redeemStake({ userId, opId });
+  };
+  
+  return (
+    <div>
+      <h2>Available Products</h2>
+      {stakingTypes?.map(type => (
+        <div key={type.id}>
+          {type.currencyId} - {type.mode} - {parseFloat(type.apy) * 100}% APY
+        </div>
+      ))}
+      
+      <h2>Active Stakes</h2>
+      {activeStakes?.map(stake => {
+        const canRedeem = stake.redeemableAt && 
+          new Date(stake.redeemableAt) <= new Date();
+          
+        return (
+          <div key={stake.operation.id}>
+            {stake.amount} {stake.type.currencyId}
+            Yield: {stake.yield}
+            {canRedeem && (
+              <button onClick={() => handleRedeem(stake.operation.id)}>
+                Redeem
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+## Environment Variables
+
+Configure these environment variables in your `.env` file:
+
+```bash
+# Staking endpoints
+NEXT_PUBLIC_EP_STAKING_TYPE=https://api.crocante.io/v1/staking/types
+NEXT_PUBLIC_EP_STAKING=https://api.crocante.io/v1/staking
+NEXT_PUBLIC_EP_STAKING_ACTIVE=https://api.crocante.io/v1/staking/active
+NEXT_PUBLIC_EP_STAKING_REDEEMED=https://api.crocante.io/v1/staking/redeemed
+NEXT_PUBLIC_EP_STAKING_REDEEM=https://api.crocante.io/v1/staking/%OPID/redeem
+```
+
+## Error Handling
+
+All endpoints may return error responses:
+
+```json
+{
+  "error": "Insufficient balance",
+  "status": 400
+}
+```
+
+Common error scenarios:
+
+| Error | Status | Description |
+|-------|--------|-------------|
+| Insufficient balance | 400 | User doesn't have enough of the currency to stake |
+| Amount below minimum | 400 | Stake amount is less than `minAmount` |
+| Invalid typeId | 404 | Staking product not found |
+| Invalid opId | 404 | Operation not found |
+| Not redeemable yet | 400 | Attempting to redeem before `redeemableAt` |
+| Unauthorized | 401 | Not authenticated |
+
+## Rate Limiting
+
+Staking endpoints are subject to standard API rate limits. The platform automatically handles query invalidation and refetching using React Query with a 5-minute stale time.

@@ -1,0 +1,324 @@
+---
+title: 'Get Available Tokens'
+description: 'Retrieve a list of all available token balances across all currencies'
+api: 'GET {EP_STATEMENT_AVAILABLE}'
+---
+
+Retrieve a comprehensive list of available token balances for all supported currencies. This endpoint provides the amount available for each token along with estimated prices and values in the quote currency.
+
+## Polling Configuration
+
+This endpoint supports automatic polling for real-time balance updates:
+
+- **Stale Time**: 5 minutes (300,000ms)
+- **Default Poll Interval**: Configurable via `pollIntervalMs` parameter
+- **Background Polling**: Enabled when `pollIntervalMs > 0`
+
+## Authentication
+
+Requires valid session authentication. The endpoint automatically includes credentials from the active session.
+
+## Response
+
+The response contains an array of available token data with pricing information.
+
+<ResponseField name="data" type="object" required>
+  The main data container
+  
+  <Expandable title="Available Tokens Data">
+    <ResponseField name="availables" type="AvailableToken[]" required>
+      Array of available token balances
+      
+      <Expandable title="Available Token Object">
+        <ResponseField name="currency" type="Currency" required>
+          The cryptocurrency or token details
+          
+          <Expandable title="Currency">
+            <ResponseField name="id" type="string" required>
+              Currency symbol (e.g., `"BTC"`, `"ETH"`, `"USDT"`)
+            </ResponseField>
+            
+            <ResponseField name="name" type="string" required>
+              Full currency name (e.g., `"Bitcoin"`, `"Ethereum"`)
+            </ResponseField>
+            
+            <ResponseField name="decimals" type="number" required>
+              Number of decimal places for precision
+              
+              Example: `8` for BTC, `2` for USDT
+            </ResponseField>
+            
+            <ResponseField name="allowTransfers" type="boolean" required>
+              Whether transfers are allowed for this currency
+            </ResponseField>
+            
+            <ResponseField name="disabled" type="boolean" required>
+              Whether the currency is currently disabled
+            </ResponseField>
+            
+            <ResponseField name="priority" type="number" required>
+              Display priority (0-3, higher is more prominent)
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+        
+        <ResponseField name="quoteCurrency" type="Currency" required>
+          The quote currency for pricing (typically USDT)
+        </ResponseField>
+        
+        <ResponseField name="amount" type="string" required>
+          Available amount of the token
+          
+          Example: `"0.0083506"` for BTC, `"76.4778"` for USDC
+        </ResponseField>
+        
+        <ResponseField name="estPrice" type="string" required>
+          Estimated price per unit in quote currency
+          
+          Example: `"91141.05"` for BTC price in USDT
+        </ResponseField>
+        
+        <ResponseField name="estValue" type="string" required>
+          Estimated total value (amount × price) in quote currency
+          
+          Example: `"761.08"`
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="number" required>
+  HTTP status code
+  
+  Example: `200`
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "data": {
+    "availables": [
+      {
+        "currency": {
+          "id": "BTC",
+          "name": "Bitcoin",
+          "decimals": 8,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "quoteCurrency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "amount": "0.0083506",
+        "estPrice": "91141.05",
+        "estValue": "761.08"
+      },
+      {
+        "currency": {
+          "id": "ETH",
+          "name": "Ethereum",
+          "decimals": 8,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 2
+        },
+        "quoteCurrency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "amount": "0.04256646",
+        "estPrice": "3143.105",
+        "estValue": "133.79"
+      },
+      {
+        "currency": {
+          "id": "USDC",
+          "name": "USD Coin",
+          "decimals": 4,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 2
+        },
+        "quoteCurrency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "amount": "76.4778",
+        "estPrice": "1.00065",
+        "estValue": "76.52"
+      },
+      {
+        "currency": {
+          "id": "SOL",
+          "name": "Solana",
+          "decimals": 8,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 1
+        },
+        "quoteCurrency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "amount": "0.29265251",
+        "estPrice": "135.045",
+        "estValue": "39.52"
+      },
+      {
+        "currency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "quoteCurrency": {
+          "id": "USDT",
+          "name": "Tether",
+          "decimals": 2,
+          "allowTransfers": true,
+          "disabled": false,
+          "priority": 3
+        },
+        "amount": "34.49",
+        "estPrice": "1",
+        "estValue": "34.49"
+      }
+    ]
+  },
+  "status": 200
+}
+```
+
+## TypeScript Types
+
+```typescript
+import { z } from "zod";
+import { CurrencySchema } from "./net-worth-data";
+
+export const AvailableTokenDataSchema = z.object({
+  currency: CurrencySchema,
+  quoteCurrency: CurrencySchema,
+  amount: z.string(),
+  estPrice: z.string(),
+  estValue: z.string(),
+});
+
+export type AvailableTokenData = z.infer<typeof AvailableTokenDataSchema>;
+
+export const AvailablesDataSchema = z.object({
+  availables: z.array(AvailableTokenDataSchema),
+});
+
+export type AvailablesData = z.infer<typeof AvailablesDataSchema>;
+
+export const availablesDataResponseSchema = z.object({
+  data: AvailablesDataSchema,
+  status: z.number(),
+});
+
+export type AvailablesDataResponse = z.infer<typeof availablesDataResponseSchema>;
+
+// Formatted UI type
+export type AvailablesDataItemUI = {
+  id: string;
+  name: string;
+  amount: string;
+  value: string;
+};
+```
+
+## Usage Example
+
+```typescript
+import { useAvailables } from '@/services/hooks/use-availables';
+
+function AvailableBalancesComponent() {
+  const userId = "user-123";
+  const pollInterval = 30000; // Poll every 30 seconds
+  
+  const { data: availables, isLoading, error } = useAvailables(
+    userId,
+    pollInterval
+  );
+  
+  if (isLoading) return <div>Loading balances...</div>;
+  if (error) return <div>Error loading balances</div>;
+  
+  return (
+    <div>
+      <h1>Available Balances</h1>
+      <ul>
+        {availables?.map((token) => (
+          <li key={token.id}>
+            {token.name}: {token.amount} (${token.value})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Data Formatting
+
+The hook automatically formats the raw API response into a simplified UI structure:
+
+```typescript
+// Raw API response is transformed to:
+{
+  id: "BTC",           // currency.id
+  name: "Bitcoin",     // currency.name
+  amount: "0.0083506", // amount
+  value: "761.08"      // estValue
+}
+```
+
+## Filtering and Sorting
+
+The response includes all available tokens, including those with zero balances. You may want to filter the results in your application:
+
+```typescript
+// Filter tokens with non-zero balances
+const nonZeroBalances = availables?.filter(
+  (token) => parseFloat(token.amount) > 0
+);
+
+// Sort by value (descending)
+const sortedByValue = availables?.sort(
+  (a, b) => parseFloat(b.value) - parseFloat(a.value)
+);
+```
+
+## Error Handling
+
+The endpoint gracefully handles errors by falling back to mock data when:
+- Network requests fail
+- Authentication is invalid
+- The session mode is set to "mock"
+
+## Related Endpoints
+
+- [Get Net Worth](/api/portfolio/net-worth) - Get complete portfolio with assets and liabilities
+- [Get Token Statement](/api/portfolio/statements) - Get detailed statement for a specific token

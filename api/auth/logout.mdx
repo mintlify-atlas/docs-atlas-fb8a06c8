@@ -1,0 +1,146 @@
+---
+title: 'Logout'
+api: 'POST /api/auth/logout'
+description: 'End the current user session and invalidate authentication'
+---
+
+## Overview
+
+Terminates the current user session by clearing the session cookie and optionally notifying the backend authentication service to invalidate the access token.
+
+The endpoint always succeeds and clears the local session cookie, even if the backend logout request fails. This ensures users can always clear their local session state.
+
+## Request
+
+No request body is required. The endpoint reads the session cookie from the request headers.
+
+### Headers
+
+The request must include the session cookie set during login:
+
+```
+Cookie: crocante_session=<encrypted_session_value>
+```
+
+### Request Example
+
+```bash
+curl -X POST https://api.crocante.com/api/auth/logout \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -b cookies.txt
+```
+
+## Response
+
+### Success Response (200)
+
+The logout endpoint always returns a success response, regardless of whether a valid session existed.
+
+<ResponseField name="success" type="boolean">
+  Always `true`
+</ResponseField>
+
+```json
+{
+  "success": true
+}
+```
+
+#### Session Cookie Clearing
+
+The response includes a `Set-Cookie` header that clears the session cookie:
+
+- **Name**: `crocante_session`
+- **Value**: Empty string
+- **Max-Age**: 0 (immediate expiration)
+- **HttpOnly**: `true`
+- **Secure**: `true` in production
+- **SameSite**: `Strict`
+- **Path**: `/`
+
+## Logout Flow
+
+1. Client sends POST request to `/api/auth/logout` with session cookie
+2. BFF immediately clears session cookie in response
+3. BFF extracts access token from session cookie
+4. If token exists, BFF sends logout request to backend service
+5. Backend invalidates the access token (best-effort)
+6. BFF returns success response
+7. Client receives cleared cookie and session ends
+
+## Behavior Details
+
+### Always Succeeds
+
+The logout endpoint is designed to always succeed from the client's perspective:
+
+- Returns 200 OK even if no session cookie is present
+- Returns 200 OK even if backend logout fails
+- Always clears the local session cookie
+
+This ensures users can always clear their local authentication state, even during network failures or backend unavailability.
+
+### Backend Notification
+
+If a valid session cookie is present, the BFF attempts to notify the backend:
+
+```http
+POST {API_GATEWAY}/{EP_AUTH_LOGOUT}
+Authorization: Bearer <access_token>
+Content-Type: application/json
+Accept: application/json
+```
+
+Backend notification failures are logged but do not affect the logout response. The session cookie is cleared regardless of backend response.
+
+## Client-Side Cleanup
+
+The `LoginService.logout()` method performs additional client-side cleanup:
+
+1. Calls `/api/auth/logout` endpoint
+2. Clears all localStorage data
+3. Sets session mode to `none`
+4. Dispatches `session-mode-changed` event
+
+This ensures complete session cleanup on the client side.
+
+## Code Example
+
+```typescript
+import { LoginService } from '@/services/api/auth/login-service';
+
+// Logout is always successful
+await LoginService.logout();
+
+// Session cookie is cleared
+// localStorage is cleared
+// session-mode-changed event is dispatched
+console.log('Logged out successfully');
+```
+
+```javascript
+// Listen for session changes
+window.addEventListener('session-mode-changed', () => {
+  console.log('Session state changed');
+  // Redirect to login page or update UI
+});
+```
+
+```bash
+# Logout with curl
+curl -X POST https://api.crocante.com/api/auth/logout \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -c cookies.txt
+
+# Session cookie is now cleared in cookies.txt
+```
+
+## Security Considerations
+
+- Logout always succeeds to prevent denial-of-service attacks
+- Session cookies are cleared immediately on client side
+- Backend token invalidation is best-effort
+- No sensitive information is returned in the response
+- CSRF protection via SameSite cookie attribute

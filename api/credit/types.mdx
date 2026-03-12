@@ -1,0 +1,488 @@
+---
+title: "Loan Types"
+description: "Available loan products and their terms"
+---
+
+## Get Loan Types
+
+<CodeGroup>
+```typescript GET /loan/types
+import { useLoanType } from '@/services/hooks/use-loan-type';
+
+const { data: loanTypes } = useLoanType({
+  userId: '79f970d7-3b2f-492c-a358-6c1f1c2fd429',
+  enabled: true
+});
+```
+</CodeGroup>
+
+Retrieve all available loan types with their configuration, limits, fees, and tier structures. Use this endpoint to display loan options to users and validate loan creation parameters.
+
+### Response
+
+<ResponseField name="types" type="array">
+  Array of available loan types
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the loan type (e.g., `ETH_USDT`, `BTC_USDT`)
+  </ResponseField>
+  
+  <ResponseField name="groupId" type="string">
+    Loan group category (e.g., `TRADE` for trading loans)
+  </ResponseField>
+  
+  <ResponseField name="collatId" type="string">
+    Collateral currency identifier (e.g., `ETH`, `BTC`)
+  </ResponseField>
+  
+  <ResponseField name="sizeId" type="string">
+    Loan size currency identifier (e.g., `USDT`)
+  </ResponseField>
+  
+  <ResponseField name="durationDays" type="number">
+    Maximum loan duration in days
+  </ResponseField>
+  
+  <ResponseField name="tiers" type="array">
+    APR tiers based on collateral ratio. Lower ratios = higher APR.
+    
+    <ResponseField name="ratio" type="string">
+      Minimum collateral ratio for this tier
+    </ResponseField>
+    
+    <ResponseField name="apr" type="string">
+      Annual percentage rate for this tier
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="models" type="array">
+    Recommended ratio/APR models for loan creation. These represent suggested collateral ratios.
+    
+    <ResponseField name="ratio" type="string">
+      Suggested collateral ratio
+    </ResponseField>
+    
+    <ResponseField name="apr" type="string">
+      Expected APR at this ratio
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="liqRatio" type="string">
+    Liquidation ratio threshold - loans below this ratio can be liquidated
+  </ResponseField>
+  
+  <ResponseField name="forcedLiqFeePercent" type="string">
+    Fee percentage charged for forced liquidations (automatic liquidations)
+  </ResponseField>
+  
+  <ResponseField name="liqFeePercent" type="string">
+    Fee percentage charged for voluntary liquidations (user-initiated)
+  </ResponseField>
+  
+  <ResponseField name="origFeePercent" type="string">
+    Origination fee percentage charged when creating a loan
+  </ResponseField>
+  
+  <ResponseField name="minCollatRatio" type="string">
+    Minimum collateral ratio required to create or maintain a loan
+  </ResponseField>
+  
+  <ResponseField name="marginCallRatio" type="string">
+    Margin call threshold - users receive warnings below this ratio
+  </ResponseField>
+  
+  <ResponseField name="minSize" type="string">
+    Minimum loan size allowed
+  </ResponseField>
+  
+  <ResponseField name="maxSize" type="string">
+    Maximum loan size allowed
+  </ResponseField>
+  
+  <ResponseField name="minLiqAmount" type="string">
+    Minimum amount for voluntary liquidation operations
+  </ResponseField>
+  
+  <ResponseField name="maxLiqAmount" type="string">
+    Maximum amount for voluntary liquidation operations
+  </ResponseField>
+</ResponseField>
+
+### Response Example
+
+```json
+[
+  {
+    "id": "BTC_USDT",
+    "groupId": "TRADE",
+    "collatId": "BTC",
+    "sizeId": "USDT",
+    "durationDays": 180,
+    "tiers": [
+      {
+        "ratio": "1.2",
+        "apr": "0.135"
+      },
+      {
+        "ratio": "1.5",
+        "apr": "0.0975"
+      },
+      {
+        "ratio": "2",
+        "apr": "0.05"
+      }
+    ],
+    "models": [
+      {
+        "ratio": "4",
+        "apr": "0.05"
+      },
+      {
+        "ratio": "2",
+        "apr": "0.0975"
+      },
+      {
+        "ratio": "1.5",
+        "apr": "0.135"
+      }
+    ],
+    "liqRatio": "1.2",
+    "forcedLiqFeePercent": "0.005",
+    "liqFeePercent": "0.0035",
+    "origFeePercent": "0.0035",
+    "minCollatRatio": "1.5",
+    "marginCallRatio": "1.3",
+    "minSize": "0",
+    "maxSize": "500000",
+    "minLiqAmount": "10",
+    "maxLiqAmount": "950000"
+  },
+  {
+    "id": "ETH_USDT",
+    "groupId": "TRADE",
+    "collatId": "ETH",
+    "sizeId": "USDT",
+    "durationDays": 180,
+    "tiers": [
+      {
+        "ratio": "1.2",
+        "apr": "0.135"
+      },
+      {
+        "ratio": "1.5",
+        "apr": "0.0975"
+      },
+      {
+        "ratio": "2",
+        "apr": "0.05"
+      }
+    ],
+    "models": [
+      {
+        "ratio": "4",
+        "apr": "0.05"
+      },
+      {
+        "ratio": "2",
+        "apr": "0.0975"
+      },
+      {
+        "ratio": "1.5",
+        "apr": "0.135"
+      }
+    ],
+    "liqRatio": "1.2",
+    "forcedLiqFeePercent": "0.005",
+    "liqFeePercent": "0.0035",
+    "origFeePercent": "0.0035",
+    "minCollatRatio": "1.5",
+    "marginCallRatio": "1.3",
+    "minSize": "0",
+    "maxSize": "500000",
+    "minLiqAmount": "10",
+    "maxLiqAmount": "950000"
+  }
+]
+```
+
+---
+
+## Available Loan Products
+
+### ETH_USDT
+
+Borrow USDT using ETH as collateral.
+
+**Key Features:**
+- Collateral: Ethereum (ETH)
+- Borrow: Tether (USDT)
+- Max Duration: 180 days
+- APR Range: 5.0% - 13.5%
+- Max Loan Size: $500,000 USDT
+
+**Recommended Ratios:**
+- Conservative (4.0x): 5.0% APR - Safest option with maximum buffer
+- Moderate (2.0x): 9.75% APR - Balanced risk/reward
+- Aggressive (1.5x): 13.5% APR - Minimum ratio, higher risk
+
+### BTC_USDT
+
+Borrow USDT using BTC as collateral.
+
+**Key Features:**
+- Collateral: Bitcoin (BTC)
+- Borrow: Tether (USDT)
+- Max Duration: 180 days
+- APR Range: 5.0% - 13.5%
+- Max Loan Size: $500,000 USDT
+
+**Recommended Ratios:**
+- Conservative (4.0x): 5.0% APR
+- Moderate (2.0x): 9.75% APR
+- Aggressive (1.5x): 13.5% APR
+
+---
+
+## Understanding Loan Terms
+
+### APR Tier Structure
+
+All current loan types use the same three-tier APR structure:
+
+| Tier | Min Ratio | APR | Risk Level | Use Case |
+|------|-----------|-----|------------|----------|
+| 0 | 1.2 (120%) | 13.5% | High | Maximum leverage, near liquidation |
+| 1 | 1.5 (150%) | 9.75% | Medium | Minimum recommended ratio |
+| 2 | 2.0 (200%) | 5.0% | Low | Safe, long-term positions |
+
+### Fees
+
+**Origination Fee (0.35%)**
+- Charged once when creating a loan
+- Added to initial debt
+- Example: $1,000 loan = $3.50 fee = $1,003.50 initial debt
+
+**Voluntary Liquidation Fee (0.35%)**
+- Charged when you liquidate collateral to repay debt
+- Applied to the liquidated amount
+- Example: Liquidating $100 worth of ETH incurs $0.35 fee
+
+**Forced Liquidation Fee (0.5%)**
+- Higher fee for automatic liquidations
+- Triggered when ratio falls below liquidation threshold
+- Incentivizes maintaining healthy collateral ratios
+
+### Duration and Limits
+
+**Maximum Duration: 180 days**
+- Loans can remain open for up to 6 months
+- Interest accrues continuously based on current APR tier
+- No prepayment penalties
+
+**Size Limits:**
+- Minimum: $0 (no minimum)
+- Maximum: $500,000 USDT per loan
+- Users can have multiple active loans
+
+**Liquidation Limits:**
+- Minimum voluntary liquidation: $10 USDT
+- Maximum voluntary liquidation: $950,000 USDT
+
+---
+
+## Risk Management Parameters
+
+### Collateral Ratio Thresholds
+
+```
+Safe Zone (2.0+)        ──────────── 5.0% APR
+                              ↓
+Caution Zone (1.5-2.0)  ──────────── 9.75% APR
+                              ↓
+Danger Zone (1.3-1.5)   ──────────── 13.5% APR + Margin Call Warning
+                              ↓
+Liquidation Zone (<1.2) ──────────── Automatic Liquidation Risk
+```
+
+### Margin Call System
+
+**Margin Call Ratio: 1.3**
+
+When your collateral ratio falls below 1.3:
+- You receive margin call notifications
+- Recommended to add collateral immediately
+- Liquidation can occur if ratio drops to 1.2
+- Only 10% buffer before liquidation
+
+**Example Scenario:**
+- Loan: $1,000 USDT
+- Collateral: 0.5 ETH at $2,600
+- Current Value: $1,300
+- Current Ratio: 1.3 (Margin Call!)
+- Add $100 ETH to reach 1.4 ratio
+
+### Liquidation Protection
+
+**Liquidation Ratio: 1.2**
+
+Loans below 1.2 collateral ratio are subject to forced liquidation:
+- System automatically sells collateral
+- Repays outstanding debt
+- Charges 0.5% forced liquidation fee
+- User receives any remaining collateral
+
+**Best Practices:**
+- Maintain 2.0+ ratio for safety
+- Add collateral when approaching 1.5
+- Never let ratio drop below 1.3
+- Monitor market volatility
+
+---
+
+## Calculating Loan Costs
+
+### Example 1: Conservative ETH Loan
+
+**Scenario:**
+- Borrow: $10,000 USDT
+- Collateral Ratio: 2.0 (200%)
+- Required Collateral: $20,000 worth of ETH
+- ETH Price: $2,500
+- Required ETH: 8 ETH
+- Duration: 30 days
+
+**Costs:**
+```
+Origination Fee:    $10,000 × 0.0035 = $35
+Initial Debt:       $10,000 + $35 = $10,035
+
+Daily Interest:     $10,035 × (0.05/365) = $1.37
+30-Day Interest:    $1.37 × 30 = $41.10
+
+Total Repayment:    $10,035 + $41.10 = $10,076.10
+Effective Cost:     $76.10 (0.76%)
+```
+
+### Example 2: Aggressive BTC Loan
+
+**Scenario:**
+- Borrow: $50,000 USDT
+- Collateral Ratio: 1.5 (150%)
+- Required Collateral: $75,000 worth of BTC
+- BTC Price: $50,000
+- Required BTC: 1.5 BTC
+- Duration: 90 days
+
+**Costs:**
+```
+Origination Fee:    $50,000 × 0.0035 = $175
+Initial Debt:       $50,000 + $175 = $50,175
+
+Daily Interest:     $50,175 × (0.135/365) = $18.55
+90-Day Interest:    $18.55 × 90 = $1,669.50
+
+Total Repayment:    $50,175 + $1,669.50 = $51,844.50
+Effective Cost:     $1,844.50 (3.69%)
+```
+
+**Key Difference:** The aggressive 1.5x ratio pays 13.5% APR vs 5.0% APR for the conservative 2.0x ratio, resulting in higher interest costs.
+
+---
+
+## Choosing the Right Loan Type
+
+### When to Use ETH_USDT
+
+**Advantages:**
+- High liquidity in ETH markets
+- Lower gas fees for collateral deposits
+- Suitable for ETH holders who want to avoid selling
+- Good for leveraging ETH holdings
+
+**Best For:**
+- ETH investors maintaining long positions
+- Accessing liquidity without selling ETH
+- Trading opportunities requiring USDT
+- Short-term cash flow needs
+
+### When to Use BTC_USDT
+
+**Advantages:**
+- BTC is typically less volatile than ETH
+- Largest, most established collateral asset
+- Preferred by conservative borrowers
+- Better for long-term loans
+
+**Best For:**
+- BTC holders wanting to HODL
+- Long-term leveraged positions
+- Lower volatility requirements
+- Large loan amounts
+
+---
+
+## TypeScript Types
+
+```typescript
+// Loan type model
+interface LoanTypeModel {
+  ratio: string;  // Suggested collateral ratio
+  apr: string;    // Expected APR at this ratio
+}
+
+// Loan type tier
+interface LoanTypeTier {
+  ratio: string;  // Minimum ratio for this tier
+  apr: string;    // APR for this tier
+}
+
+// Complete loan type configuration
+interface LoanType {
+  id: string;                      // e.g., "ETH_USDT"
+  groupId: string;                 // e.g., "TRADE"
+  collatId: string;                // Collateral currency (e.g., "ETH")
+  sizeId: string;                  // Loan currency (e.g., "USDT")
+  durationDays: number;            // Maximum loan duration
+  tiers: LoanTypeTier[];           // APR tier structure
+  models: LoanTypeModel[];         // Recommended ratios
+  liqRatio: string;                // Liquidation threshold
+  forcedLiqFeePercent: string;     // Forced liquidation fee
+  liqFeePercent: string;           // Voluntary liquidation fee
+  origFeePercent: string;          // Origination fee
+  minCollatRatio: string;          // Minimum allowed ratio
+  marginCallRatio: string;         // Margin call threshold
+  minSize: string;                 // Minimum loan amount
+  maxSize: string;                 // Maximum loan amount
+  minLiqAmount: string;            // Min liquidation amount
+  maxLiqAmount: string;            // Max liquidation amount
+}
+
+// Example usage
+const loanType: LoanType = {
+  id: "ETH_USDT",
+  groupId: "TRADE",
+  collatId: "ETH",
+  sizeId: "USDT",
+  durationDays: 180,
+  tiers: [
+    { ratio: "1.2", apr: "0.135" },
+    { ratio: "1.5", apr: "0.0975" },
+    { ratio: "2", apr: "0.05" }
+  ],
+  models: [
+    { ratio: "4", apr: "0.05" },
+    { ratio: "2", apr: "0.0975" },
+    { ratio: "1.5", apr: "0.135" }
+  ],
+  liqRatio: "1.2",
+  forcedLiqFeePercent: "0.005",
+  liqFeePercent: "0.0035",
+  origFeePercent: "0.0035",
+  minCollatRatio: "1.5",
+  marginCallRatio: "1.3",
+  minSize: "0",
+  maxSize: "500000",
+  minLiqAmount: "10",
+  maxLiqAmount: "950000"
+};
+```

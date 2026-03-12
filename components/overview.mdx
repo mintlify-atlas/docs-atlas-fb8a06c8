@@ -1,0 +1,182 @@
+---
+title: 'Component Architecture'
+description: 'Understanding the Crocante component architecture and design system'
+---
+
+## Overview
+
+The Crocante platform uses a well-structured component architecture built on Next.js, React, and TypeScript. Components are organized into three main categories:
+
+- **Core Components**: Foundational UI elements (buttons, inputs, modals, tables)
+- **Custom Components**: Business-specific components (token selectors, dynamic avatars)
+- **Layout Components**: Application structure components (shell, header, navigation)
+
+## Architecture Principles
+
+### Component Organization
+
+Components are organized in a hierarchical structure:
+
+```
+components/
+├── core/           # Reusable UI primitives
+├── custom/         # Domain-specific components
+├── layout/         # Application layout
+├── auth/           # Authentication flows
+└── icons/          # Icon components
+```
+
+### Type Safety
+
+All components are built with TypeScript and use proper interface definitions:
+
+```typescript
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  isLoading?: boolean;
+  className?: string;
+  isActive?: boolean;
+}
+```
+
+### Design System
+
+The platform uses a consistent design system with:
+
+- **Tailwind CSS**: Utility-first styling
+- **Custom Theme**: Defined color palette and spacing
+- **Variant System**: Consistent component variations
+- **Responsive Design**: Mobile-first approach using `useIsMobile` hook
+
+## Core Design Patterns
+
+### Variant-Based Styling
+
+Components use variant props for consistent styling:
+
+```typescript
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "outline"
+  | "outline-secondary"
+  | "nav"
+  | "avatar-outline";
+```
+
+### Forwarding Refs
+
+Components that need ref access use `forwardRef`:
+
+```typescript
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { type = "text", value, onChange, ... },
+  ref
+) {
+  // Component implementation
+});
+```
+
+### Composition Over Configuration
+
+Components favor composition patterns:
+
+```tsx
+<Modal title="Transfer" open={isOpen} onClose={handleClose}>
+  <Input label="Amount" type="number" />
+  <Select label="Token" properties={selectorProps} />
+</Modal>
+```
+
+## Responsive Design
+
+### Mobile Detection
+
+The platform uses the `useIsMobile` hook for responsive behavior:
+
+```typescript
+const isMobile = useIsMobile(); // default breakpoint: 1024px
+
+// Conditional rendering
+{isMobile ? (
+  <MobileLayout />
+) : (
+  <DesktopLayout />
+)}
+```
+
+### Adaptive Layouts
+
+Components automatically adapt based on screen size:
+
+- **Modal**: Bottom sheet on mobile, centered dialog on desktop
+- **Table**: Horizontal scrolling with navigation arrows on mobile
+- **Navigation**: Collapsible sidebar on mobile
+
+## Accessibility
+
+Components follow accessibility best practices:
+
+- **ARIA Attributes**: Proper `aria-label`, `aria-disabled`, `aria-busy`
+- **Keyboard Navigation**: Full keyboard support
+- **Focus Management**: Visible focus states
+- **Screen Reader Support**: Semantic HTML and ARIA roles
+
+## Portal Rendering
+
+Modals and overlays use React portals for proper z-index management:
+
+```typescript
+import { createPortal } from "react-dom";
+
+return createPortal(modalContent, document.body);
+```
+
+## State Management
+
+Components use local state with hooks for UI interactions:
+
+- **useState**: Local component state
+- **useCallback**: Memoized callbacks
+- **useEffect**: Side effects and lifecycle
+- **useRef**: DOM references and mutable values
+
+## Performance Optimization
+
+### Lazy Loading
+
+Heavy components are loaded on demand:
+
+```typescript
+const mounted = useMounted();
+
+{mounted && <ExpensiveComponent />}
+```
+
+### Memoization
+
+Callbacks are memoized to prevent unnecessary re-renders:
+
+```typescript
+const handleChange = useCallback(
+  (value: string) => {
+    onChange?.(value);
+  },
+  [onChange]
+);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="UI Components" icon="palette" href="/components/ui-components">
+    Explore core UI components
+  </Card>
+  <Card title="Custom Hooks" icon="hook" href="/components/hooks">
+    Learn about custom React hooks
+  </Card>
+  <Card title="Context Providers" icon="share-nodes" href="/components/context">
+    Understand context providers
+  </Card>
+</CardGroup>
